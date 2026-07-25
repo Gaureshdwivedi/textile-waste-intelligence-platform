@@ -1,15 +1,15 @@
 from fastapi import FastAPI
+from app.config import settings
 
 app = FastAPI(
-    title="Textile Waste Intelligence Platform API",
-    version="1.0.0"
+    title=settings.PROJECT_NAME,
+    version=settings.PROJECT_VERSION
 )
 
 @app.get("/")
-def home():
+def root():
     return {
-        "message": "Welcome to Textile Waste Intelligence Platform API",
-        "status": "Running Successfully"
+        "message": "Welcome to Textile Waste Intelligence Platform API"
     }
 
 @app.get("/health")
