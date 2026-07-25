@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Node
+node_modules/
+dist/
+build/
+
+# VS Code
+.vscode/
+
+# PostgreSQL
+*.sql
+
+# OS
+Thumbs.db
+.DS_Store
