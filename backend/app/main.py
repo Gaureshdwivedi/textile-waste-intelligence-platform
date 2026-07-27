@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.database import Base, engine
 from app.routers.auth import router as auth_router
+from app.routers.user import router as user_router
 
 # Import models
 from app.models.user import User
@@ -27,3 +28,5 @@ def health():
     return {
         "status": "Healthy"
     }
+    
+app.include_router(user_router)    
