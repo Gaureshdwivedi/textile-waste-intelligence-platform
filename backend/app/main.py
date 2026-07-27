@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.config import settings
 from app.database import Base, engine
+from app.routers.auth import router as auth_router
 
 # Import models
 from app.models.user import User
@@ -12,6 +13,7 @@ app = FastAPI(
     version=settings.PROJECT_VERSION
 )
 
+app.include_router(auth_router)
 
 @app.get("/")
 def root():
