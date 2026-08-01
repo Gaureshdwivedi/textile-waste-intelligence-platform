@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta, UTC
-from jose import jwt, JWTError
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
+from jose import jwt, JWTError
 
 from app.config import settings
+from app.database import get_db
+from app.models.user import User
 
 security = HTTPBearer()
 
@@ -26,6 +29,7 @@ def create_access_token(data: dict):
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ):
     token = credentials.credentials
 
@@ -44,7 +48,15 @@ def get_current_user(
                 detail="Invalid token"
             )
 
-        return email
+        user = db.query(User).filter(User.email == email).first()
+
+        if user is None:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+        return user
 
     except JWTError:
         raise HTTPException(
