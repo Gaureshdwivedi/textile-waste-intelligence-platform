@@ -1,13 +1,18 @@
 # Python
-__pycache__/
+backend/venv/
+backend/.env
+backend/uploads/
+**/__pycache__/
 *.pyc
-venv/
-.env
 
 # Node
+frontend/node_modules/
 node_modules/
 dist/
 build/
+
+# Environment files
+.env
 
 # VS Code
 .vscode/
