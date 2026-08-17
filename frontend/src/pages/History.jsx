@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+
+import { useTheme } from "@mui/material/styles";
 
 import {
   Box,
@@ -11,10 +13,79 @@ import {
   Typography,
   Grid,
   Button,
+  TextField,
+  InputAdornment,
+  Chip,
+  CircularProgress,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
 } from "@mui/material";
 
+import SearchIcon from "@mui/icons-material/Search";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import RecyclingIcon from "@mui/icons-material/Recycling";
+import PsychologyIcon from "@mui/icons-material/Psychology";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CloseIcon from "@mui/icons-material/Close";
+
+import { useNavigate } from "react-router-dom";
+
 export default function History() {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === "dark";
+
+  // Theme-aware colors so History follows the application's dark/light mode.
+  const pageBg = theme.palette.background.default;
+  const paperBg = theme.palette.background.paper;
+  const primaryText = theme.palette.text.primary;
+  const secondaryText = theme.palette.text.secondary;
+  const dividerColor = theme.palette.divider;
+  const subtleBg = isDark ? "rgba(255,255,255,0.06)" : "#f8fafc";
+  const imageBg = isDark ? "#1e293b" : "#e2e8f0";
+  const searchIconColor = isDark ? "#94a3b8" : "#64748b";
+
   const [textiles, setTextiles] = useState([]);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("All");
+  const [loading, setLoading] = useState(true);
+
+  const [selectedTextile, setSelectedTextile] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // ==========================================================
+  // PARSE TOP PREDICTIONS
+  // ==========================================================
+
+  const parseTopPredictions = (value) => {
+    if (!value) return [];
+
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      console.error(
+        "Could not parse top predictions:",
+        error
+      );
+      return [];
+    }
+  };
+
+  // ==========================================================
+  // FETCH HISTORY
+  // ==========================================================
 
   useEffect(() => {
     fetchHistory();
@@ -22,134 +93,1453 @@ export default function History() {
 
   const fetchHistory = async () => {
     try {
-      const token = localStorage.getItem("access_token");
+      setLoading(true);
 
-      const response = await api.get("/textiles/history", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const token =
+        localStorage.getItem("access_token");
 
-      setTextiles(response.data.data);
+      const response = await api.get(
+        "/textiles/history",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-    } catch (err) {
-      console.error(err);
+      console.log(
+        "HISTORY API RESPONSE:",
+        response.data
+      );
+
+      console.log(
+        "FIRST TEXTILE:",
+        response.data.data?.[0]
+      );
+
+      setTextiles(
+        response.data.data || []
+      );
+    } catch (error) {
+      console.error(
+        "History loading error:",
+        error
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ==========================================================
+  // DELETE
+  // ==========================================================
+
   const handleDelete = async (id) => {
-  const confirmDelete = window.confirm(
-    "Are you sure you want to delete this textile?"
-  );
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this textile analysis?"
+    );
 
-  if (!confirmDelete) return;
+    if (!confirmDelete) return;
 
-  try {
-    const token = localStorage.getItem("access_token");
+    try {
+      const token =
+        localStorage.getItem("access_token");
 
-    await api.delete(`/textiles/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      await api.delete(
+        `/textiles/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      fetchHistory();
+    } catch (error) {
+      console.error(error);
+      alert("Delete failed.");
+    }
+  };
+
+  // ==========================================================
+  // VIEW DETAILS
+  // ==========================================================
+
+  const handleViewDetails = (item) => {
+    setSelectedTextile(item);
+    setDetailsOpen(true);
+  };
+
+  // ==========================================================
+  // CATEGORIES
+  // ==========================================================
+
+  const categories = useMemo(() => {
+    const values = textiles
+      .map((item) => item.category)
+      .filter(
+        (value) =>
+          value &&
+          value !== "Unknown"
+      );
+
+    return [
+      "All",
+      ...new Set(values),
+    ];
+  }, [textiles]);
+
+  // ==========================================================
+  // FILTER
+  // ==========================================================
+
+  const filteredTextiles = useMemo(() => {
+    return textiles.filter((item) => {
+      const searchValue =
+        search.toLowerCase();
+
+      const matchesSearch =
+        item.textile_name
+          ?.toLowerCase()
+          .includes(searchValue) ||
+        item.prediction
+          ?.toLowerCase()
+          .includes(searchValue) ||
+        item.description
+          ?.toLowerCase()
+          .includes(searchValue) ||
+        item.category
+          ?.toLowerCase()
+          .includes(searchValue);
+
+      const matchesCategory =
+        category === "All" ||
+        item.category === category;
+
+      return (
+        matchesSearch &&
+        matchesCategory
+      );
     });
+  }, [
+    textiles,
+    search,
+    category,
+  ]);
 
-    fetchHistory();
+  // ==========================================================
+  // IMAGE URL
+  // ==========================================================
 
-  } catch (error) {
-    console.error(error);
-    alert("Delete Failed");
-  }
-};
+  const getImageUrl = (path) => {
+    if (!path) return "";
+
+    if (path.startsWith("http")) {
+      return path;
+    }
+
+    return `http://127.0.0.1:8000/${path.replace(
+      /^\/+/,
+      ""
+    )}`;
+  };
+
+  // ==========================================================
+  // PAGE
+  // ==========================================================
 
   return (
-    <>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        backgroundColor: pageBg,
+        color: primaryText,
+      }}
+    >
+
+      {/* =====================================================
+          TOP NAVBAR
+          ===================================================== */}
+
       <Navbar />
 
-      <Box sx={{ display: "flex" }}>
-        <Sidebar />
+      {/* =====================================================
+          SIDEBAR
+          ===================================================== */}
+
+      <Sidebar />
+
+      {/* =====================================================
+          MAIN CONTENT
+          ===================================================== */}
+
+      <Box
+        sx={{
+          marginLeft: {
+            xs: 0,
+            md: "290px",
+          },
+
+          width: {
+            xs: "100%",
+            md: "calc(100% - 290px)",
+          },
+
+          minHeight: "100vh",
+
+          paddingTop: {
+            xs: "90px",
+            md: "105px",
+          },
+
+          paddingBottom: 8,
+
+          boxSizing: "border-box",
+
+          backgroundColor: pageBg,
+
+          color: primaryText,
+        }}
+      >
+
+        {/* ===================================================
+            CENTER CONTENT
+            =================================================== */}
 
         <Box
           sx={{
-            flexGrow: 1,
-            ml: "260px",
-            mt: "80px",
-            p: 4,
+            width: "100%",
+            maxWidth: "1200px",
+
+            marginLeft: "auto",
+            marginRight: "auto",
+
+            paddingLeft: {
+              xs: 2,
+              sm: 3,
+              md: 4,
+            },
+
+            paddingRight: {
+              xs: 2,
+              sm: 3,
+              md: 4,
+            },
+
+            boxSizing: "border-box",
           }}
         >
-          <Typography
-            variant="h4"
-            fontWeight="bold"
-            mb={4}
+
+          {/* =================================================
+              HEADER
+              ================================================= */}
+
+          <Box
+            sx={{
+              textAlign: {
+                xs: "left",
+                md: "center",
+              },
+
+              mb: 4,
+            }}
           >
-            Upload History
-          </Typography>
+            <Typography
+              sx={{
+                fontSize: {
+                  xs: 36,
+                  sm: 48,
+                  md: 56,
+                },
 
-          <Grid container spacing={3}>
+                fontWeight: 700,
 
-            {textiles.map((item) => (
+                color: primaryText,
 
-              <Grid item xs={12} md={6} lg={4} key={item.id}>
+                lineHeight: 1.1,
 
-                <Card>
+                mb: 1,
+              }}
+            >
+              Textile Analysis History
+            </Typography>
 
-                  <img
-                    src={`http://127.0.0.1:8000/${item.image_path}`}
-                    alt={item.textile_name}
-                    style={{
-                      width: "100%",
-                      height: 220,
-                      objectFit: "cover",
+            <Typography
+              sx={{
+                fontSize: 18,
+                color: secondaryText,
+              }}
+            >
+              View and manage all your previous
+              AI textile analyses.
+            </Typography>
+          </Box>
+
+          {/* =================================================
+              SEARCH + FILTER
+              ================================================= */}
+
+          <Box
+            sx={{
+              width: "100%",
+
+              backgroundColor: paperBg,
+
+              border:
+                `1px solid ${dividerColor}`,
+
+              borderRadius: 5,
+
+              padding: 2,
+
+              display: "flex",
+
+              alignItems: "center",
+
+              gap: 2,
+
+              mb: 5,
+
+              boxSizing: "border-box",
+
+              boxShadow:
+                "0 8px 25px rgba(15,23,42,0.05)",
+
+              flexDirection: {
+                xs: "column",
+                sm: "row",
+              },
+            }}
+          >
+
+            <TextField
+              fullWidth
+              placeholder="Search textile, fabric or category..."
+              value={search}
+              onChange={(e) =>
+                setSearch(e.target.value)
+              }
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon
+                      sx={{
+                        color: "#64748b",
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 3,
+                  backgroundColor: paperBg,
+                  color: primaryText,
+                },
+
+                "& .MuiOutlinedInput-input":
+                  {
+                    color: primaryText,
+                  },
+
+                "& .MuiOutlinedInput-input::placeholder":
+                  {
+                    color: "#94a3b8",
+                    opacity: 1,
+                  },
+              }}
+            />
+
+            <FormControl
+              sx={{
+                minWidth: 150,
+
+                width: {
+                  xs: "100%",
+                  sm: "auto",
+                },
+
+                backgroundColor: paperBg,
+              }}
+            >
+              <InputLabel
+                sx={{
+                  color: secondaryText,
+                }}
+              >
+                Category
+              </InputLabel>
+
+              <Select
+                value={category}
+                label="Category"
+                onChange={(e) =>
+                  setCategory(e.target.value)
+                }
+                sx={{
+                  borderRadius: 3,
+
+                  color: primaryText,
+
+                  backgroundColor: paperBg,
+
+                  "& .MuiSvgIcon-root": {
+                    color: secondaryText,
+                  },
+                }}
+              >
+                {categories.map((item) => (
+                  <MenuItem
+                    key={item}
+                    value={item}
+                    sx={{
+                      color: primaryText,
+                      backgroundColor: paperBg,
+                      "&:hover": {
+                        backgroundColor: isDark ? "#334155" : "#f1f5f9",
+                      },
                     }}
-                  />
+                  >
+                    {item}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
-                  <CardContent>
+          </Box>
 
-                    <Typography
-                      variant="h6"
-                      fontWeight="bold"
-                    >
-                      {item.textile_name}
-                    </Typography>
+          {/* =================================================
+              RESULTS HEADER
+              ================================================= */}
 
-                    <Typography
-                      color="gray"
-                      mt={1}
-                    >
-                      {item.description}
-                    </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent:
+                "space-between",
 
-                    <Typography
-                      mt={2}
-                      fontSize={13}
-                    >
-                      Uploaded:
-                      {" "}
-                      {new Date(
-                        item.uploaded_at
-                      ).toLocaleString()}
-                    </Typography>
+              mb: 3,
 
-                    <Button
-                      color="error"
-                      varient="contained"
-                      sx={{ mt: 2 }}
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      Delete
-                    </Button>
+              gap: 2,
+            }}
+          >
+            <Typography
+              sx={{
+                fontSize: 20,
+                fontWeight: 500,
+                color: primaryText,
+              }}
+            >
+              {filteredTextiles.length}{" "}
+              {filteredTextiles.length === 1
+                ? "Analysis"
+                : "Analyses"}
+            </Typography>
 
-                  </CardContent>
+            <Button
+              variant="contained"
+              startIcon={
+                <CloudUploadIcon />
+              }
+              onClick={() =>
+                navigate("/upload")
+              }
+              sx={{
+                borderRadius: 3,
 
-                </Card>
+                px: 3,
+                py: 1.2,
 
+                fontWeight: 700,
+
+                background:
+                  "linear-gradient(135deg,#2563eb,#4f46e5)",
+
+                boxShadow:
+                  "0 8px 20px rgba(37,99,235,0.25)",
+
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg,#1d4ed8,#4338ca)",
+                },
+              }}
+            >
+              New Analysis
+            </Button>
+          </Box>
+
+          {/* =================================================
+              LOADING
+              ================================================= */}
+
+          {loading && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent:
+                  "center",
+                py: 10,
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+
+          {/* =================================================
+              EMPTY
+              ================================================= */}
+
+          {!loading &&
+            filteredTextiles.length ===
+              0 && (
+              <Box
+                sx={{
+                  backgroundColor: paperBg,
+
+                  borderRadius: 5,
+
+                  p: 8,
+
+                  textAlign: "center",
+
+                  color: primaryText,
+                }}
+              >
+                <PsychologyIcon
+                  sx={{
+                    fontSize: 60,
+                    color: "#94a3b8",
+                    mb: 2,
+                  }}
+                />
+
+                <Typography
+                  variant="h6"
+                  fontWeight="bold"
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  No analyses found
+                </Typography>
+
+                <Typography
+                  sx={{
+                    mt: 1,
+                    color: secondaryText,
+                  }}
+                >
+                  Upload a textile image
+                  to start your first
+                  analysis.
+                </Typography>
+              </Box>
+            )}
+
+          {/* =================================================
+              CARDS
+              ================================================= */}
+
+          {!loading &&
+            filteredTextiles.length >
+              0 && (
+              <Grid
+                container
+                spacing={3}
+                justifyContent="center"
+              >
+                {filteredTextiles.map(
+                  (item) => {
+
+                    const topPredictions =
+                      parseTopPredictions(
+                        item.top_predictions
+                      );
+
+                    return (
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        md={6}
+                        lg={6}
+                        key={item.id}
+                      >
+
+                        <Card
+                          sx={{
+                            height: "100%",
+
+                            borderRadius: 5,
+
+                            overflow:
+                              "hidden",
+
+                            backgroundColor: paperBg,
+
+                            color: primaryText,
+
+                            border:
+                              "1px solid rgba(148,163,184,0.18)",
+
+                            boxShadow:
+                              "0 12px 35px rgba(15,23,42,0.08)",
+
+                            transition:
+                              "0.25s",
+
+                            "&:hover": {
+                              transform:
+                                "translateY(-5px)",
+
+                              boxShadow:
+                                "0 20px 45px rgba(15,23,42,0.14)",
+                            },
+                          }}
+                        >
+
+                          {/* IMAGE */}
+
+                          <Box
+                            sx={{
+                              position:
+                                "relative",
+
+                              height: 260,
+
+                              background: imageBg,
+                            }}
+                          >
+                            <img
+                              src={getImageUrl(
+                                item.image_path
+                              )}
+                              alt={
+                                item.textile_name ||
+                                "Textile"
+                              }
+                              style={{
+                                width:
+                                  "100%",
+                                height:
+                                  "100%",
+                                objectFit:
+                                  "cover",
+                              }}
+                            />
+
+                            <Chip
+                              label={`${Number(
+                                item.confidence ||
+                                  0
+                              ).toFixed(
+                                2
+                              )}% AI Confidence`}
+                              sx={{
+                                position:
+                                  "absolute",
+
+                                top: 16,
+                                right: 16,
+
+                                backgroundColor: isDark ? "#0f2d1c" : "#ffffff",
+
+                                color:
+                                  "#22c55e",
+
+                                fontWeight: 700,
+
+                                boxShadow:
+                                  "0 5px 15px rgba(0,0,0,0.15)",
+                              }}
+                            />
+                          </Box>
+
+                          {/* CONTENT */}
+
+                          <CardContent
+                            sx={{
+                              p: 3,
+
+                              backgroundColor: paperBg,
+
+                              color: primaryText,
+                            }}
+                          >
+
+                            <Typography
+                              variant="h5"
+                              fontWeight="bold"
+                              sx={{
+                                mb: 1.5,
+                                color: primaryText,
+                              }}
+                            >
+                              {item.textile_name ||
+                                "Unnamed Textile"}
+                            </Typography>
+
+                            {/* PREDICTION */}
+
+                            <Box
+                              sx={{
+                                display:
+                                  "flex",
+
+                                alignItems:
+                                  "center",
+
+                                gap: 1,
+
+                                mb: 2,
+                              }}
+                            >
+                              <PsychologyIcon
+                                sx={{
+                                  color:
+                                    "#7c3aed",
+                                }}
+                              />
+
+                              <Typography
+                                sx={{
+                                  color:
+                                    "#334155",
+                                }}
+                              >
+                                AI Prediction:{" "}
+                                <strong>
+                                  {item.prediction ||
+                                    "Unknown"}
+                                </strong>
+                              </Typography>
+                            </Box>
+
+                            {/* TAGS */}
+
+                            <Box
+                              sx={{
+                                display:
+                                  "flex",
+
+                                flexWrap:
+                                  "wrap",
+
+                                gap: 1,
+
+                                mb: 2,
+                              }}
+                            >
+
+                              <Chip
+                                size="small"
+                                label={
+                                  item.category ||
+                                  "Category unavailable"
+                                }
+                                sx={{
+                                  backgroundColor:
+                                    "#eef2ff",
+
+                                  color:
+                                    "#4338ca",
+
+                                  fontWeight:
+                                    600,
+                                }}
+                              />
+
+                              <Chip
+                                size="small"
+                                icon={
+                                  <RecyclingIcon />
+                                }
+                                label={
+                                  item.recyclable ||
+                                  "Recyclability unavailable"
+                                }
+                                sx={{
+                                  backgroundColor:
+                                    item.recyclable
+                                      ? "#dcfce7"
+                                      : "#f1f5f9",
+
+                                  color:
+                                    item.recyclable
+                                      ? "#15803d"
+                                      : "#475569",
+
+                                  fontWeight:
+                                    600,
+                                }}
+                              />
+
+                            </Box>
+
+                            <Divider
+                              sx={{
+                                my: 2,
+                                borderColor: dividerColor,
+                              }}
+                            />
+
+                            {/* TOP PREDICTIONS */}
+
+                            {topPredictions.length >
+                              0 && (
+                              <Box
+                                sx={{
+                                  mb: 2,
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={
+                                    700
+                                  }
+                                  sx={{
+                                    mb: 1,
+                                    color: secondaryText,
+                                  }}
+                                >
+                                  Top Predictions
+                                </Typography>
+
+                                <Box
+                                  sx={{
+                                    display:
+                                      "flex",
+
+                                    gap: 1,
+
+                                    flexWrap:
+                                      "wrap",
+                                  }}
+                                >
+                                  {topPredictions
+                                    .slice(
+                                      0,
+                                      3
+                                    )
+                                    .map(
+                                      (
+                                        prediction,
+                                        index
+                                      ) => (
+                                        <Chip
+                                          key={`${prediction.fabric}-${index}`}
+                                          size="small"
+                                          label={`${prediction.fabric} ${Number(
+                                            prediction.confidence ||
+                                              0
+                                          ).toFixed(
+                                            1
+                                          )}%`}
+                                          sx={{
+                                            backgroundColor:
+                                              index ===
+                                              0
+                                                ? (isDark ? "#312e81" : "#eef2ff")
+                                                : subtleBg,
+
+                                            color:
+                                              index ===
+                                              0
+                                                ? (isDark ? "#c7d2fe" : "#4338ca")
+                                                : secondaryText,
+
+                                            fontWeight:
+                                              600,
+                                          }}
+                                        />
+                                      )
+                                    )}
+                                </Box>
+                              </Box>
+                            )}
+
+                            {/* DATE */}
+
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                mb: 2,
+                                color: secondaryText,
+                              }}
+                            >
+                              Uploaded:{" "}
+                              {item.uploaded_at
+                                ? new Date(
+                                    item.uploaded_at
+                                  ).toLocaleString()
+                                : "Unknown"}
+                            </Typography>
+
+                            {/* ACTIONS */}
+
+                            <Box
+                              sx={{
+                                display:
+                                  "flex",
+
+                                gap: 1.5,
+                              }}
+                            >
+
+                              <Button
+                                fullWidth
+                                variant="outlined"
+                                startIcon={
+                                  <VisibilityIcon />
+                                }
+                                onClick={() =>
+                                  handleViewDetails(
+                                    item
+                                  )
+                                }
+                                sx={{
+                                  borderRadius: 3,
+
+                                  fontWeight:
+                                    600,
+
+                                  color:
+                                    "#2563eb",
+
+                                  borderColor:
+                                    "#2563eb",
+                                }}
+                              >
+                                View Details
+                              </Button>
+
+                              <Button
+                                variant="outlined"
+                                color="error"
+                                onClick={() =>
+                                  handleDelete(
+                                    item.id
+                                  )
+                                }
+                                sx={{
+                                  minWidth:
+                                    50,
+
+                                  borderRadius:
+                                    3,
+                                }}
+                              >
+                                <DeleteIcon />
+                              </Button>
+
+                            </Box>
+
+                          </CardContent>
+
+                        </Card>
+
+                      </Grid>
+                    );
+                  }
+                )}
               </Grid>
-
-            ))}
-
-          </Grid>
-
+            )}
         </Box>
       </Box>
-    </>
+
+      {/* =====================================================
+          DETAILS DIALOG
+          ===================================================== */}
+
+      <Dialog
+        open={detailsOpen}
+        onClose={() =>
+          setDetailsOpen(false)
+        }
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            backgroundColor: paperBg,
+
+            color: primaryText,
+
+            borderRadius: 4,
+
+            boxShadow:
+              "0 25px 70px rgba(0,0,0,0.25)",
+          },
+        }}
+      >
+
+        {selectedTextile && (
+          <>
+
+            {/* DIALOG HEADER */}
+
+            <DialogTitle
+              sx={{
+                display: "flex",
+
+                justifyContent:
+                  "space-between",
+
+                alignItems:
+                  "center",
+
+                fontWeight: 700,
+
+                backgroundColor: paperBg,
+
+                color: primaryText,
+
+                borderBottom:
+                  `1px solid ${dividerColor}`,
+              }}
+            >
+              Textile Analysis Details
+
+              <Button
+                onClick={() =>
+                  setDetailsOpen(
+                    false
+                  )
+                }
+                sx={{
+                  minWidth: 40,
+
+                  color: secondaryText,
+
+                  "&:hover": {
+                    backgroundColor: isDark ? "#334155" : "#f1f5f9",
+                  },
+                }}
+              >
+                <CloseIcon />
+              </Button>
+            </DialogTitle>
+
+            {/* DIALOG CONTENT */}
+
+            <DialogContent
+              dividers
+              sx={{
+                backgroundColor: paperBg,
+
+                color: primaryText,
+
+                "&::-webkit-scrollbar":
+                  {
+                    width: 8,
+                  },
+
+                "&::-webkit-scrollbar-thumb":
+                  {
+                    backgroundColor:
+                      isDark ? "#475569" : "#cbd5e1",
+
+                    borderRadius: 4,
+                  },
+              }}
+            >
+
+              {/* IMAGE */}
+
+              <Box
+                sx={{
+                  width: "100%",
+
+                  height: 260,
+
+                  borderRadius: 3,
+
+                  overflow:
+                    "hidden",
+
+                  mb: 3,
+                }}
+              >
+                <img
+                  src={getImageUrl(
+                    selectedTextile.image_path
+                  )}
+                  alt="Textile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit:
+                      "cover",
+                  }}
+                />
+              </Box>
+
+              {/* TITLE */}
+
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                mb={2}
+                sx={{
+                  color: primaryText,
+                }}
+              >
+                {selectedTextile.textile_name ||
+                  "Unnamed Textile"}
+              </Typography>
+
+              {/* PREDICTION */}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  AI Prediction
+                </Typography>
+
+                <Typography
+                  fontWeight="bold"
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {selectedTextile.prediction ||
+                    "Unknown"}
+                </Typography>
+              </Box>
+
+              {/* CONFIDENCE */}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  AI Confidence
+                </Typography>
+
+                <Typography
+                  fontWeight="bold"
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {Number(
+                    selectedTextile.confidence ||
+                      0
+                  ).toFixed(2)}
+                  %
+                </Typography>
+              </Box>
+
+              {/* CATEGORY */}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  Category
+                </Typography>
+
+                <Typography
+                  fontWeight="bold"
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {selectedTextile.category ||
+                    "Not available"}
+                </Typography>
+              </Box>
+
+              {/* RECYCLABILITY */}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  Recyclability
+                </Typography>
+
+                <Typography
+                  fontWeight="bold"
+                  sx={{
+                    color:
+                      selectedTextile.recyclable
+                        ? "#16a34a"
+                        : "#64748b",
+                  }}
+                >
+                  {selectedTextile.recyclable ||
+                    "Not available"}
+                </Typography>
+              </Box>
+
+              {/* RECOMMENDATION */}
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  Recommendation
+                </Typography>
+
+                <Typography
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {selectedTextile.recommendation ||
+                    "No recommendation available."}
+                </Typography>
+              </Box>
+
+              <Divider
+                sx={{
+                  my: 3,
+                }}
+              />
+
+              {/* TOP 3 */}
+
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+                sx={{
+                  mb: 2,
+                  color: primaryText,
+                }}
+              >
+                Top 3 AI Predictions
+              </Typography>
+
+              {parseTopPredictions(
+                selectedTextile.top_predictions
+              ).length > 0 ? (
+
+                <Box
+                  sx={{
+                    display:
+                      "flex",
+
+                    flexDirection:
+                      "column",
+
+                    gap: 1.5,
+                  }}
+                >
+                  {parseTopPredictions(
+                    selectedTextile.top_predictions
+                  )
+                    .slice(0, 3)
+                    .map(
+                      (
+                        prediction,
+                        index
+                      ) => (
+                        <Box
+                          key={`${prediction.fabric}-${index}`}
+                          sx={{
+                            display:
+                              "flex",
+
+                            alignItems:
+                              "center",
+
+                            justifyContent:
+                              "space-between",
+
+                            p: 1.5,
+
+                            borderRadius: 2,
+
+                            backgroundColor:
+                              index === 0
+                                ? (isDark ? "#1e3a5f" : "#eff6ff")
+                                : subtleBg,
+
+                            border:
+                              `1px solid ${dividerColor}`,
+                          }}
+                        >
+
+                          <Box
+                            sx={{
+                              display:
+                                "flex",
+
+                              alignItems:
+                                "center",
+
+                              gap: 1.5,
+                            }}
+                          >
+                            <Typography
+                              fontWeight="bold"
+                              sx={{
+                                minWidth:
+                                  30,
+                              }}
+                            >
+                              {index === 0
+                                ? "🥇"
+                                : index === 1
+                                ? "🥈"
+                                : "🥉"}
+                            </Typography>
+
+                            <Typography
+                              fontWeight={600}
+                              sx={{
+                                color: primaryText,
+                              }}
+                            >
+                              {prediction.fabric ||
+                                "Unknown"}
+                            </Typography>
+                          </Box>
+
+                          <Typography
+                            fontWeight="bold"
+                            sx={{
+                              color:
+                                index === 0
+                                  ? "#2563eb"
+                                  : "#475569",
+                            }}
+                          >
+                            {Number(
+                              prediction.confidence ||
+                                0
+                            ).toFixed(
+                              2
+                            )}
+                            %
+                          </Typography>
+
+                        </Box>
+                      )
+                    )}
+                </Box>
+
+              ) : (
+
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  Top predictions are
+                  not available.
+                </Typography>
+
+              )}
+
+              {/* DESCRIPTION */}
+
+              <Divider
+                sx={{
+                  my: 3,
+                }}
+              />
+
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                    mb: 0.5,
+                  }}
+                >
+                  Description
+                </Typography>
+
+                <Typography
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {selectedTextile.description ||
+                    "No description provided."}
+                </Typography>
+              </Box>
+
+              {/* UPLOADED DATE */}
+
+              <Box sx={{ mb: 1 }}>
+                <Typography
+                  sx={{
+                    color: secondaryText,
+                  }}
+                >
+                  Uploaded
+                </Typography>
+
+                <Typography
+                  sx={{
+                    color: primaryText,
+                  }}
+                >
+                  {selectedTextile.uploaded_at
+                    ? new Date(
+                        selectedTextile.uploaded_at
+                      ).toLocaleString()
+                    : "Unknown"}
+                </Typography>
+              </Box>
+
+            </DialogContent>
+
+            {/* DIALOG FOOTER */}
+
+            <DialogActions
+              sx={{
+                backgroundColor:
+                  "#ffffff",
+
+                borderTop:
+                  "1px solid #e2e8f0",
+
+                p: 2,
+              }}
+            >
+              <Button
+                onClick={() =>
+                  setDetailsOpen(
+                    false
+                  )
+                }
+                variant="contained"
+                sx={{
+                  borderRadius: 2,
+
+                  px: 3,
+
+                  background:
+                    "linear-gradient(135deg,#2563eb,#4f46e5)",
+
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg,#1d4ed8,#4338ca)",
+                  },
+                }}
+              >
+                Close
+              </Button>
+            </DialogActions>
+
+          </>
+        )}
+
+      </Dialog>
+    </Box>
   );
 }

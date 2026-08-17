@@ -18,13 +18,14 @@ import HistoryIcon from "@mui/icons-material/History";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
 import RecyclingIcon from "@mui/icons-material/Recycling";
-
+import { useTheme } from "@mui/material/styles";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const drawerWidth = 260;
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
   const [user, setUser] = useState(null);
 
   const menuItems = [
@@ -67,11 +68,17 @@ const fetchUser = async () => {
       sx={{
         width: drawerWidth,
         "& .MuiDrawer-paper": {
-          width: drawerWidth,
-          bgcolor: "#111827",
-          color: "white",
-          borderRight: "1px solid #1f2937",
-        },
+            width: drawerWidth,
+            mt: "64px",
+            height: "calc(100vh - 64px)",
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+            background: theme.palette.background.paper,
+            color: theme.palette.text.primary,
+            borderRight: "1px solid",
+            borderColor: "divider",
+          },
       }}
     >
       <Box sx={{ p: 3 }}>
@@ -85,8 +92,8 @@ const fetchUser = async () => {
               TextileAI
             </Typography>
 
-            <Typography variant="body2" color="gray">
-              AI Waste Intelligence
+            <Typography variant="body2" color="text.secondary">
+              AI Waste Intelligence Platform
             </Typography>
           </Box>
         </Box>
@@ -124,12 +131,12 @@ const fetchUser = async () => {
 
       <Divider />
 
-      <Box sx={{ p: 2 }}>
+      <Box sx={{ p: 2 ,borderTop:"1px solid",borderColor:"divider",}}>
         <Typography fontWeight="bold">
           {user?.full_name || "User"}
         </Typography>
 
-        <Typography variant="body2" color="gray">
+        <Typography variant="body2" color="text.secondary">
           {user?.email || ""}
         </Typography>
 
@@ -138,9 +145,13 @@ const fetchUser = async () => {
           sx={{
             mt: 2,
             borderRadius: 2,
+            "&:hover": {
+              bgcolor: "#ef4444",
+              color: "white",
+            },
           }}
         >
-          <ListItemIcon sx={{ color: "white" }}>
+          <ListItemIcon sx={{ color: "inherit" }}>
             <LogoutIcon />
           </ListItemIcon>
 
