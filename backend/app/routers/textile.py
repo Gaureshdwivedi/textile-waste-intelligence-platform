@@ -432,7 +432,7 @@ async def upload_textile(
 
                 fabric=prediction,
 
-                weight_kg=1.0,
+                textile_weight_kg=1.0,
 
                 circularity_score=(
                     sustainability_result[

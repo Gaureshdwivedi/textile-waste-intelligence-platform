@@ -18,6 +18,7 @@ import {
   Paper,
   Stack,
   useTheme,
+  Chip,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -27,6 +28,12 @@ import RecyclingIcon from "@mui/icons-material/Recycling";
 import CategoryIcon from "@mui/icons-material/Category";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import WaterDropIcon from "@mui/icons-material/WaterDrop";
+import Co2Icon from "@mui/icons-material/Co2";
+import EnergySavingsLeafIcon from "@mui/icons-material/EnergySavingsLeaf";
+import FactoryIcon from "@mui/icons-material/Factory";
+import RecyclingOutlinedIcon from "@mui/icons-material/RecyclingOutlined";
 
 export default function HistoryDetails() {
   const { id } = useParams();
@@ -47,49 +54,29 @@ export default function HistoryDetails() {
       ? "linear-gradient(135deg, #0f172a 0%, #111827 50%, #1e293b 100%)"
       : "linear-gradient(135deg, #f5f7fb 0%, #eef2f7 100%)",
 
-    cardBackground: isDark
-      ? "#1e293b"
-      : "#ffffff",
+    cardBackground: isDark ? "#1e293b" : "#ffffff",
 
-    secondaryCardBackground: isDark
-      ? "#273449"
-      : "#ffffff",
+    secondaryCardBackground: isDark ? "#273449" : "#ffffff",
 
-    predictionBackground: isDark
-      ? "#263449"
-      : "#f8fafc",
+    predictionBackground: isDark ? "#263449" : "#f8fafc",
 
-    border: isDark
-      ? "#475569"
-      : "#e2e8f0",
+    border: isDark ? "#475569" : "#e2e8f0",
 
-    primaryText: isDark
-      ? "#f8fafc"
-      : "#111827",
+    primaryText: isDark ? "#f8fafc" : "#111827",
 
-    secondaryText: isDark
-      ? "#cbd5e1"
-      : "#64748b",
+    secondaryText: isDark ? "#cbd5e1" : "#64748b",
 
-    mutedText: isDark
-      ? "#94a3b8"
-      : "#64748b",
+    mutedText: isDark ? "#94a3b8" : "#64748b",
 
     primaryPredictionBackground: isDark
       ? "linear-gradient(135deg, #252b4a, #302d52)"
       : "linear-gradient(135deg, #eef2ff, #f5f3ff)",
 
-    recommendationBackground: isDark
-      ? "#12352b"
-      : "#ecfdf5",
+    recommendationBackground: isDark ? "#12352b" : "#ecfdf5",
 
-    recommendationText: isDark
-      ? "#d1fae5"
-      : "#166534",
+    recommendationText: isDark ? "#d1fae5" : "#166534",
 
-    iconMuted: isDark
-      ? "#94a3b8"
-      : "#64748b",
+    iconMuted: isDark ? "#94a3b8" : "#64748b",
   };
 
   // =====================================================
@@ -115,16 +102,14 @@ export default function HistoryDetails() {
       const history = response.data.data || [];
 
       const found = history.find(
-        (textile) =>
-          String(textile.id) === String(id)
+        (textile) => String(textile.id) === String(id)
       );
+
+      console.log("History Details Record:", found);
 
       setItem(found || null);
     } catch (error) {
-      console.error(
-        "Failed to load textile details:",
-        error
-      );
+      console.error("Failed to load textile details:", error);
     } finally {
       setLoading(false);
     }
@@ -162,13 +147,19 @@ export default function HistoryDetails() {
 
       return [];
     } catch (error) {
-      console.error(
-        "Failed to parse top predictions:",
-        error
-      );
-
+      console.error("Failed to parse top predictions:", error);
       return [];
     }
+  };
+
+  // =====================================================
+  // NUMBER HELPER
+  // =====================================================
+
+  const numberValue = (value, fallback = 0) => {
+    const number = Number(value);
+
+    return Number.isFinite(number) ? number : fallback;
   };
 
   // =====================================================
@@ -279,10 +270,7 @@ export default function HistoryDetails() {
                 border: `1px solid ${colors.border}`,
               }}
             >
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-              >
+              <Typography variant="h5" fontWeight="bold">
                 Analysis not found
               </Typography>
 
@@ -292,8 +280,7 @@ export default function HistoryDetails() {
                   color: colors.secondaryText,
                 }}
               >
-                This textile analysis may have
-                been deleted.
+                This textile analysis may have been deleted.
               </Typography>
             </Paper>
           </Box>
@@ -306,13 +293,48 @@ export default function HistoryDetails() {
   // DATA
   // =====================================================
 
-  const confidence =
-    Number(item.confidence) || 0;
+  const confidence = numberValue(item.confidence);
 
-  const topPredictions =
-    parseTopPredictions(
-      item.top_predictions
-    );
+  const topPredictions = parseTopPredictions(item.top_predictions);
+
+  const sustainabilityScore = numberValue(
+    item.sustainability_score
+  );
+
+  const circularityScore = numberValue(
+    item.circularity_score
+  );
+
+  const environmentalBenefitScore = numberValue(
+    item.environmental_benefit_score
+  );
+
+  const co2Savings = numberValue(
+    item.estimated_co2_savings_kg
+  );
+
+  const waterSavings = numberValue(
+    item.estimated_water_savings_liters
+  );
+
+  const landfillDiversion = numberValue(
+    item.estimated_landfill_diversion_kg
+  );
+
+  const resourceRecovery = numberValue(
+    item.estimated_resource_recovery_kg
+  );
+
+  // =====================================================
+  // SCORE COLOR
+  // =====================================================
+
+  const getScoreColor = (score) => {
+    if (score >= 80) return "#16a34a";
+    if (score >= 60) return "#2563eb";
+    if (score >= 40) return "#f59e0b";
+    return "#dc2626";
+  };
 
   // =====================================================
   // MAIN
@@ -328,28 +350,18 @@ export default function HistoryDetails() {
         <Box
           sx={{
             flexGrow: 1,
-
             ml: {
               xs: 0,
               md: "290px",
             },
-
             pt: "105px",
-
             px: {
               xs: 2,
               md: 5,
             },
-
             pb: 6,
-
             minHeight: "100vh",
-
-            background:
-              colors.pageBackground,
-
-            transition:
-              "background 0.3s ease",
+            background: colors.pageBackground,
           }}
         >
           <Box
@@ -370,12 +382,6 @@ export default function HistoryDetails() {
                 textTransform: "none",
                 fontWeight: "bold",
                 color: colors.primaryText,
-
-                "&:hover": {
-                  backgroundColor: isDark
-                    ? "rgba(255,255,255,0.08)"
-                    : "rgba(0,0,0,0.04)",
-                },
               }}
             >
               Back to History
@@ -402,8 +408,8 @@ export default function HistoryDetails() {
                   color: colors.secondaryText,
                 }}
               >
-                Detailed AI analysis and
-                classification results.
+                Detailed AI analysis, sustainability and
+                circular-economy results.
               </Typography>
             </Box>
 
@@ -416,21 +422,12 @@ export default function HistoryDetails() {
               sx={{
                 borderRadius: 5,
                 overflow: "hidden",
-
-                border:
-                  `1px solid ${colors.border}`,
-
-                backgroundColor:
-                  colors.cardBackground,
-
+                border: `1px solid ${colors.border}`,
+                backgroundColor: colors.cardBackground,
                 color: colors.primaryText,
-
-                transition:
-                  "background-color 0.3s ease, border-color 0.3s ease",
               }}
             >
               <Grid container>
-
                 {/* =================================================
                     IMAGE
                 ================================================= */}
@@ -442,14 +439,11 @@ export default function HistoryDetails() {
                         xs: 350,
                         md: "100%",
                       },
-
                       minHeight: 500,
                     }}
                   >
                     <img
-                      src={getImageUrl(
-                        item.image_path
-                      )}
+                      src={getImageUrl(item.image_path)}
                       alt={
                         item.textile_name ||
                         item.prediction
@@ -496,8 +490,8 @@ export default function HistoryDetails() {
                         color: colors.secondaryText,
                       }}
                     >
-                      AI-generated textile
-                      classification result.
+                      AI-generated textile classification
+                      and circular-economy analysis.
                     </Typography>
 
                     {/* =================================================
@@ -509,10 +503,8 @@ export default function HistoryDetails() {
                       sx={{
                         p: 3,
                         borderRadius: 4,
-
                         background:
                           colors.primaryPredictionBackground,
-
                         mb: 3,
                       }}
                     >
@@ -547,15 +539,13 @@ export default function HistoryDetails() {
                             : "#4f46e5",
                         }}
                       >
-                        {item.prediction ||
-                          "Unknown"}
+                        {item.prediction || "Unknown"}
                       </Typography>
 
                       <Typography
                         sx={{
                           mt: 1,
                           fontWeight: "bold",
-
                           color:
                             confidence >= 80
                               ? "#16a34a"
@@ -564,41 +554,26 @@ export default function HistoryDetails() {
                               : "#ea580c",
                         }}
                       >
-                        {confidence.toFixed(2)}%
-                        confidence
+                        {confidence.toFixed(2)}% confidence
                       </Typography>
                     </Paper>
 
                     {/* =================================================
-                        DETAILS
+                        BASIC DETAILS
                     ================================================= */}
 
-                    <Grid
-                      container
-                      spacing={2}
-                    >
-
+                    <Grid container spacing={2}>
                       {/* CATEGORY */}
 
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                      >
+                      <Grid item xs={12} sm={6}>
                         <Paper
                           elevation={0}
                           sx={{
                             p: 2,
                             borderRadius: 3,
-
-                            border:
-                              `1px solid ${colors.border}`,
-
+                            border: `1px solid ${colors.border}`,
                             backgroundColor:
                               colors.secondaryCardBackground,
-
-                            color:
-                              colors.primaryText,
                           }}
                         >
                           <Stack
@@ -606,9 +581,7 @@ export default function HistoryDetails() {
                             spacing={1}
                             alignItems="center"
                           >
-                            <CategoryIcon
-                              color="primary"
-                            />
+                            <CategoryIcon color="primary" />
 
                             <Typography
                               fontSize={13}
@@ -637,25 +610,15 @@ export default function HistoryDetails() {
 
                       {/* RECYCLABILITY */}
 
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                      >
+                      <Grid item xs={12} sm={6}>
                         <Paper
                           elevation={0}
                           sx={{
                             p: 2,
                             borderRadius: 3,
-
-                            border:
-                              `1px solid ${colors.border}`,
-
+                            border: `1px solid ${colors.border}`,
                             backgroundColor:
                               colors.secondaryCardBackground,
-
-                            color:
-                              colors.primaryText,
                           }}
                         >
                           <Stack
@@ -684,11 +647,7 @@ export default function HistoryDetails() {
                             fontWeight="bold"
                             sx={{
                               mt: 1,
-                              color:
-                                item.recyclable ||
-                                item.recyclability
-                                  ? "#16a34a"
-                                  : colors.primaryText,
+                              color: "#16a34a",
                             }}
                           >
                             {item.recyclable ||
@@ -699,9 +658,7 @@ export default function HistoryDetails() {
                       </Grid>
                     </Grid>
 
-                    {/* =================================================
-                        DATE
-                    ================================================= */}
+                    {/* DATE */}
 
                     <Box
                       sx={{
@@ -714,16 +671,14 @@ export default function HistoryDetails() {
                       <CalendarTodayIcon
                         sx={{
                           fontSize: 17,
-                          color:
-                            colors.iconMuted,
+                          color: colors.iconMuted,
                         }}
                       />
 
                       <Typography
                         fontSize={13}
                         sx={{
-                          color:
-                            colors.secondaryText,
+                          color: colors.secondaryText,
                         }}
                       >
                         {item.uploaded_at
@@ -738,9 +693,9 @@ export default function HistoryDetails() {
               </Grid>
             </Card>
 
-            {/* =================================================
-                LOWER INFORMATION
-            ================================================= */}
+            {/* ==========================================================
+                TOP PREDICTIONS + RECOMMENDATION
+            ========================================================== */}
 
             <Grid
               container
@@ -749,10 +704,7 @@ export default function HistoryDetails() {
                 mt: 1,
               }}
             >
-
-              {/* =================================================
-                  TOP PREDICTIONS
-              ================================================= */}
+              {/* TOP PREDICTIONS */}
 
               <Grid item xs={12} md={6}>
                 <Paper
@@ -760,16 +712,9 @@ export default function HistoryDetails() {
                   sx={{
                     p: 4,
                     borderRadius: 5,
-
-                    border:
-                      `1px solid ${colors.border}`,
-
-                    backgroundColor:
-                      colors.cardBackground,
-
-                    color:
-                      colors.primaryText,
-
+                    border: `1px solid ${colors.border}`,
+                    backgroundColor: colors.cardBackground,
+                    color: colors.primaryText,
                     height: "100%",
                   }}
                 >
@@ -777,10 +722,6 @@ export default function HistoryDetails() {
                     variant="h6"
                     fontWeight="800"
                     mb={3}
-                    sx={{
-                      color:
-                        colors.primaryText,
-                    }}
                   >
                     Top 3 AI Predictions
                   </Typography>
@@ -788,89 +729,65 @@ export default function HistoryDetails() {
                   {topPredictions.length > 0 ? (
                     topPredictions
                       .slice(0, 3)
-                      .map(
-                        (
-                          prediction,
-                          index
-                        ) => (
+                      .map((prediction, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent:
+                              "space-between",
+                            p: 2,
+                            mb: 1,
+                            borderRadius: 3,
+                            backgroundColor:
+                              colors.predictionBackground,
+                            border: `1px solid ${
+                              isDark
+                                ? "#334155"
+                                : "transparent"
+                            }`,
+                          }}
+                        >
                           <Box
-                            key={index}
-                            sx={{
-                              display:
-                                "flex",
-
-                              alignItems:
-                                "center",
-
-                              justifyContent:
-                                "space-between",
-
-                              p: 2,
-                              mb: 1,
-
-                              borderRadius: 3,
-
-                              backgroundColor:
-                                colors.predictionBackground,
-
-                              border:
-                                `1px solid ${
-                                  isDark
-                                    ? "#334155"
-                                    : "transparent"
-                                }`,
-                            }}
+                            display="flex"
+                            alignItems="center"
+                            gap={2}
                           >
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={2}
+                            <Typography
+                              fontWeight="bold"
+                              sx={{
+                                color: isDark
+                                  ? "#60a5fa"
+                                  : theme.palette
+                                      .primary.main,
+                              }}
                             >
-                              <Typography
-                                fontWeight="bold"
-                                sx={{
-                                  color:
-                                    isDark
-                                      ? "#60a5fa"
-                                      : theme
-                                          .palette
-                                          .primary
-                                          .main,
-                                }}
-                              >
-                                #{index + 1}
-                              </Typography>
-
-                              <Typography
-                                fontWeight="bold"
-                                sx={{
-                                  color:
-                                    colors.primaryText,
-                                }}
-                              >
-                                {
-                                  prediction.fabric
-                                }
-                              </Typography>
-                            </Box>
+                              #{index + 1}
+                            </Typography>
 
                             <Typography
                               fontWeight="bold"
                               sx={{
                                 color:
-                                  isDark
-                                    ? "#e2e8f0"
-                                    : colors.primaryText,
+                                  colors.primaryText,
                               }}
                             >
-                              {
-                                prediction.confidence
-                              }
-                              %
+                              {prediction.fabric}
                             </Typography>
                           </Box>
-                        )
-                      )
+
+                          <Typography
+                            fontWeight="bold"
+                            sx={{
+                              color:
+                                colors.primaryText,
+                            }}
+                          >
+                            {prediction.confidence}%
+                          </Typography>
+                        </Box>
+                      ))
                   ) : (
                     <Typography
                       sx={{
@@ -878,17 +795,14 @@ export default function HistoryDetails() {
                           colors.secondaryText,
                       }}
                     >
-                      Top prediction data is
-                      not available for this
-                      record.
+                      Top prediction data is not
+                      available for this record.
                     </Typography>
                   )}
                 </Paper>
               </Grid>
 
-              {/* =================================================
-                  RECOMMENDATION
-              ================================================= */}
+              {/* RECOMMENDATION */}
 
               <Grid item xs={12} md={6}>
                 <Paper
@@ -896,27 +810,17 @@ export default function HistoryDetails() {
                   sx={{
                     p: 4,
                     borderRadius: 5,
-
-                    border:
-                      `1px solid ${colors.border}`,
-
+                    border: `1px solid ${colors.border}`,
                     backgroundColor:
                       colors.cardBackground,
-
                     height: "100%",
-
-                    color:
-                      colors.primaryText,
+                    color: colors.primaryText,
                   }}
                 >
                   <Typography
                     variant="h6"
                     fontWeight="800"
                     mb={2}
-                    sx={{
-                      color:
-                        colors.primaryText,
-                    }}
                   >
                     AI Recommendation
                   </Typography>
@@ -927,7 +831,6 @@ export default function HistoryDetails() {
                       gap: 2,
                       p: 2.5,
                       borderRadius: 3,
-
                       backgroundColor:
                         colors.recommendationBackground,
                     }}
@@ -942,7 +845,6 @@ export default function HistoryDetails() {
                       sx={{
                         color:
                           colors.recommendationText,
-
                         lineHeight: 1.7,
                       }}
                     >
@@ -951,15 +853,10 @@ export default function HistoryDetails() {
                     </Typography>
                   </Box>
 
-                  {/* =================================================
-                      DESCRIPTION
-                  ================================================= */}
-
                   <Divider
                     sx={{
                       my: 3,
-                      borderColor:
-                        colors.border,
+                      borderColor: colors.border,
                     }}
                   />
 
@@ -967,10 +864,6 @@ export default function HistoryDetails() {
                     variant="h6"
                     fontWeight="800"
                     mb={1}
-                    sx={{
-                      color:
-                        colors.primaryText,
-                    }}
                   >
                     Description
                   </Typography>
@@ -979,7 +872,6 @@ export default function HistoryDetails() {
                     sx={{
                       color:
                         colors.secondaryText,
-
                       lineHeight: 1.7,
                     }}
                   >
@@ -990,15 +882,626 @@ export default function HistoryDetails() {
               </Grid>
             </Grid>
 
-            {/* =================================================
+            {/* ==========================================================
+                MILESTONE 3
+                SUSTAINABILITY INTELLIGENCE
+            ========================================================== */}
+
+            <Box sx={{ mt: 5 }}>
+              <Typography
+                variant="h4"
+                fontWeight="800"
+                sx={{
+                  color: colors.primaryText,
+                }}
+              >
+                Sustainability Intelligence
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 1,
+                  mb: 3,
+                  color: colors.secondaryText,
+                }}
+              >
+                Circular-economy assessment generated
+                from the textile analysis.
+              </Typography>
+
+              <Grid container spacing={3}>
+                {/* SUSTAINABILITY SCORE */}
+
+                <Grid item xs={12} md={4}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <TrendingUpIcon
+                        sx={{
+                          color: "#10b981",
+                        }}
+                      />
+
+                      <Typography
+                        fontWeight="bold"
+                        sx={{
+                          color:
+                            colors.secondaryText,
+                        }}
+                      >
+                        Sustainability Score
+                      </Typography>
+                    </Stack>
+
+                    <Typography
+                      variant="h3"
+                      fontWeight="800"
+                      sx={{
+                        mt: 2,
+                        color: getScoreColor(
+                          sustainabilityScore
+                        ),
+                      }}
+                    >
+                      {sustainabilityScore.toFixed(2)}
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      out of 100
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* CIRCULARITY SCORE */}
+
+                <Grid item xs={12} md={4}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <RecyclingOutlinedIcon
+                        sx={{
+                          color: "#0891b2",
+                        }}
+                      />
+
+                      <Typography
+                        fontWeight="bold"
+                        sx={{
+                          color:
+                            colors.secondaryText,
+                        }}
+                      >
+                        Circularity Score
+                      </Typography>
+                    </Stack>
+
+                    <Typography
+                      variant="h3"
+                      fontWeight="800"
+                      sx={{
+                        mt: 2,
+                        color: getScoreColor(
+                          circularityScore
+                        ),
+                      }}
+                    >
+                      {circularityScore.toFixed(2)}
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      out of 100
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* RECOVERY CATEGORY */}
+
+                <Grid item xs={12} md={4}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <RecyclingIcon
+                        sx={{
+                          color: "#16a34a",
+                        }}
+                      />
+
+                      <Typography
+                        fontWeight="bold"
+                        sx={{
+                          color:
+                            colors.secondaryText,
+                        }}
+                      >
+                        Recovery Potential
+                      </Typography>
+                    </Stack>
+
+                    <Typography
+                      variant="h6"
+                      fontWeight="800"
+                      sx={{
+                        mt: 2,
+                        color: "#16a34a",
+                      }}
+                    >
+                      {item.recovery_category ||
+                        "Not available"}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* ==========================================================
+                RECYCLING RECOMMENDATION
+            ========================================================== */}
+
+            <Box sx={{ mt: 5 }}>
+              <Typography
+                variant="h4"
+                fontWeight="800"
+                sx={{
+                  color: colors.primaryText,
+                }}
+              >
+                Recycling Recommendation
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 1,
+                  mb: 3,
+                  color: colors.secondaryText,
+                }}
+              >
+                Recommended circular-economy actions
+                for this textile.
+              </Typography>
+
+              <Grid container spacing={3}>
+                {/* PRIMARY ACTION */}
+
+                <Grid item xs={12} md={6}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                    }}
+                  >
+                    <Typography
+                      fontSize={14}
+                      sx={{
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Primary Action
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color: "#16a34a",
+                      }}
+                    >
+                      {item.primary_action ||
+                        "Not available"}
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* ALTERNATIVE ACTION */}
+
+                <Grid item xs={12} md={6}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                    }}
+                  >
+                    <Typography
+                      fontSize={14}
+                      sx={{
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Alternative Action
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color: "#2563eb",
+                      }}
+                    >
+                      {item.alternative_action ||
+                        "Not available"}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+            </Box>
+
+            {/* ==========================================================
+                ENVIRONMENTAL IMPACT
+            ========================================================== */}
+
+            <Box sx={{ mt: 5 }}>
+              <Typography
+                variant="h4"
+                fontWeight="800"
+                sx={{
+                  color: colors.primaryText,
+                }}
+              >
+                Estimated Environmental Impact
+              </Typography>
+
+              <Typography
+                sx={{
+                  mt: 1,
+                  mb: 3,
+                  color: colors.secondaryText,
+                }}
+              >
+                Model-based estimates associated with
+                recovering this textile.
+              </Typography>
+
+              <Grid container spacing={3}>
+                {/* CO2 */}
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                      height: "100%",
+                    }}
+                  >
+                    <Co2Icon
+                      sx={{
+                        color: "#16a34a",
+                        fontSize: 38,
+                      }}
+                    />
+
+                    <Typography
+                      sx={{
+                        mt: 2,
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      CO₂ Savings
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color:
+                          colors.primaryText,
+                      }}
+                    >
+                      {co2Savings.toFixed(2)} kg
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* WATER */}
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                      height: "100%",
+                    }}
+                  >
+                    <WaterDropIcon
+                      sx={{
+                        color: "#0284c7",
+                        fontSize: 38,
+                      }}
+                    />
+
+                    <Typography
+                      sx={{
+                        mt: 2,
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Water Savings
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color:
+                          colors.primaryText,
+                      }}
+                    >
+                      {waterSavings.toFixed(0)} L
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* LANDFILL */}
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                      height: "100%",
+                    }}
+                  >
+                    <FactoryIcon
+                      sx={{
+                        color: "#f59e0b",
+                        fontSize: 38,
+                      }}
+                    />
+
+                    <Typography
+                      sx={{
+                        mt: 2,
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Landfill Diversion
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color:
+                          colors.primaryText,
+                      }}
+                    >
+                      {landfillDiversion.toFixed(2)} kg
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                {/* RESOURCE RECOVERY */}
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      borderRadius: 5,
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor:
+                        colors.cardBackground,
+                      height: "100%",
+                    }}
+                  >
+                    <EnergySavingsLeafIcon
+                      sx={{
+                        color: "#10b981",
+                        fontSize: 38,
+                      }}
+                    />
+
+                    <Typography
+                      sx={{
+                        mt: 2,
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Resource Recovery
+                    </Typography>
+
+                    <Typography
+                      variant="h5"
+                      fontWeight="800"
+                      sx={{
+                        mt: 1,
+                        color:
+                          colors.primaryText,
+                      }}
+                    >
+                      {resourceRecovery.toFixed(2)} kg
+                    </Typography>
+                  </Paper>
+                </Grid>
+              </Grid>
+
+              {/* ENVIRONMENTAL BENEFIT */}
+
+              <Paper
+                elevation={0}
+                sx={{
+                  mt: 3,
+                  p: 4,
+                  borderRadius: 5,
+                  border: `1px solid ${colors.border}`,
+                  backgroundColor:
+                    colors.cardBackground,
+                }}
+              >
+                <Stack
+                  direction={{
+                    xs: "column",
+                    sm: "row",
+                  }}
+                  spacing={2}
+                  alignItems={{
+                    xs: "flex-start",
+                    sm: "center",
+                  }}
+                  justifyContent="space-between"
+                >
+                  <Box>
+                    <Typography
+                      variant="h6"
+                      fontWeight="800"
+                      sx={{
+                        color:
+                          colors.primaryText,
+                      }}
+                    >
+                      Environmental Benefit
+                    </Typography>
+
+                    <Typography
+                      sx={{
+                        mt: 1,
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Overall estimated environmental
+                      benefit of textile recovery.
+                    </Typography>
+                  </Box>
+
+                  <Box textAlign="center">
+                    <Typography
+                      variant="h4"
+                      fontWeight="800"
+                      sx={{
+                        color: getScoreColor(
+                          environmentalBenefitScore
+                        ),
+                      }}
+                    >
+                      {environmentalBenefitScore.toFixed(
+                        2
+                      )}
+                    </Typography>
+
+                    <Typography
+                      fontSize={13}
+                      sx={{
+                        color:
+                          colors.secondaryText,
+                      }}
+                    >
+                      Benefit Score
+                    </Typography>
+                  </Box>
+
+                  <Chip
+                    label={
+                      item.environmental_benefit ||
+                      "Not available"
+                    }
+                    sx={{
+                      fontWeight: "bold",
+                      color: "#166534",
+                      backgroundColor: "#dcfce7",
+                    }}
+                  />
+                </Stack>
+              </Paper>
+
+              <Typography
+                sx={{
+                  mt: 2,
+                  fontSize: 13,
+                  color: colors.mutedText,
+                  fontStyle: "italic",
+                }}
+              >
+                These environmental values are
+                model-based estimates and should not be
+                interpreted as direct physical measurements.
+              </Typography>
+            </Box>
+
+            {/* ==========================================================
                 DELETE
-            ================================================= */}
+            ========================================================== */}
 
             <Box
               sx={{
                 display: "flex",
                 justifyContent: "flex-end",
-                mt: 4,
+                mt: 5,
               }}
             >
               <Button
@@ -1010,17 +1513,9 @@ export default function HistoryDetails() {
                   borderRadius: 3,
                   textTransform: "none",
                   fontWeight: "bold",
-
-                  borderColor:
-                    isDark
-                      ? "#f87171"
-                      : undefined,
-
-                  "&:hover": {
-                    backgroundColor: isDark
-                      ? "rgba(239,68,68,0.12)"
-                      : undefined,
-                  },
+                  borderColor: isDark
+                    ? "#f87171"
+                    : undefined,
                 }}
               >
                 Delete Analysis

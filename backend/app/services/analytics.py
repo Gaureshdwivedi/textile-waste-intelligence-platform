@@ -13,10 +13,16 @@ Aggregates the user's textile analyses and produces:
 - Average circularity score
 - Environmental impact totals
 - Recommended recovery methods
+
+Also supports older records that were created before
+environmental impact values were stored in the database.
 """
 
 from collections import Counter
-import json
+
+from app.services.environmental import (
+    calculate_environmental_impact,
+)
 
 
 # ==========================================================
@@ -26,6 +32,7 @@ import json
 def safe_float(value, default=0.0):
 
     try:
+
         if value is None:
             return default
 
@@ -49,12 +56,160 @@ def normalize_text(value):
 
 
 # ==========================================================
+# Helper: Calculate Environmental Fallback
+# ==========================================================
+
+def get_environmental_values(textile):
+
+    """
+    Return environmental impact values for a textile.
+
+    New records already contain environmental values in the
+    database.
+
+    Older records may have NULL/0 values because they were
+    created before Milestone 3 environmental intelligence
+    was integrated.
+
+    In that case, calculate the environmental impact using
+    the existing fabric prediction and circularity score.
+    """
+
+    fabric = normalize_text(
+        getattr(
+            textile,
+            "prediction",
+            None,
+        )
+    )
+
+    circularity_score = safe_float(
+        getattr(
+            textile,
+            "circularity_score",
+            None,
+        )
+    )
+
+    # ------------------------------------------------------
+    # Read stored environmental values
+    # ------------------------------------------------------
+
+    stored_co2 = safe_float(
+        getattr(
+            textile,
+            "estimated_co2_savings_kg",
+            None,
+        )
+    )
+
+    stored_water = safe_float(
+        getattr(
+            textile,
+            "estimated_water_savings_liters",
+            None,
+        )
+    )
+
+    stored_landfill = safe_float(
+        getattr(
+            textile,
+            "estimated_landfill_diversion_kg",
+            None,
+        )
+    )
+
+    stored_resource_recovery = safe_float(
+        getattr(
+            textile,
+            "estimated_resource_recovery_kg",
+            None,
+        )
+    )
+
+    # ------------------------------------------------------
+    # If environmental data already exists, use it
+    # ------------------------------------------------------
+
+    if (
+        stored_co2 > 0
+        or stored_water > 0
+        or stored_landfill > 0
+        or stored_resource_recovery > 0
+    ):
+
+        return {
+            "estimated_co2_savings_kg": stored_co2,
+            "estimated_water_savings_liters": stored_water,
+            "estimated_landfill_diversion_kg": stored_landfill,
+            "estimated_resource_recovery_kg": (
+                stored_resource_recovery
+            ),
+        }
+
+    # ------------------------------------------------------
+    # Fallback for older records
+    # ------------------------------------------------------
+
+    try:
+
+        environmental_result = (
+            calculate_environmental_impact(
+                fabric,
+                1.0,
+                circularity_score=circularity_score,
+            )
+        )
+
+        return {
+            "estimated_co2_savings_kg": safe_float(
+                environmental_result.get(
+                    "estimated_co2_savings_kg"
+                )
+            ),
+
+            "estimated_water_savings_liters": safe_float(
+                environmental_result.get(
+                    "estimated_water_savings_liters"
+                )
+            ),
+
+            "estimated_landfill_diversion_kg": safe_float(
+                environmental_result.get(
+                    "estimated_landfill_diversion_kg"
+                )
+            ),
+
+            "estimated_resource_recovery_kg": safe_float(
+                environmental_result.get(
+                    "estimated_resource_recovery_kg"
+                )
+            ),
+        }
+
+    except Exception as error:
+
+        print(
+            "Environmental fallback error:",
+            error,
+        )
+
+        return {
+            "estimated_co2_savings_kg": 0,
+            "estimated_water_savings_liters": 0,
+            "estimated_landfill_diversion_kg": 0,
+            "estimated_resource_recovery_kg": 0,
+        }
+
+
+# ==========================================================
 # Main Analytics Function
 # ==========================================================
 
 def calculate_circular_economy_analytics(
     textiles,
 ):
+
     """
     Calculate circular economy analytics from
     the user's textile analysis history.
@@ -78,6 +233,7 @@ def calculate_circular_economy_analytics(
     if total_analyses == 0:
 
         return {
+
             "total_analyses": 0,
 
             "average_confidence": 0,
@@ -95,9 +251,13 @@ def calculate_circular_economy_analytics(
             "recommendation_distribution": {},
 
             "environmental_impact": {
+
                 "estimated_co2_savings_kg": 0,
+
                 "estimated_water_savings_liters": 0,
+
                 "estimated_landfill_diversion_kg": 0,
+
                 "estimated_resource_recovery_kg": 0,
             },
 
@@ -293,35 +453,31 @@ def calculate_circular_economy_analytics(
         # Environmental Metrics
         # --------------------------------------------------
 
+        environmental = get_environmental_values(
+            textile
+        )
+
         total_co2 += safe_float(
-            getattr(
-                textile,
-                "estimated_co2_savings_kg",
-                None,
+            environmental.get(
+                "estimated_co2_savings_kg"
             )
         )
 
         total_water += safe_float(
-            getattr(
-                textile,
-                "estimated_water_savings_liters",
-                None,
+            environmental.get(
+                "estimated_water_savings_liters"
             )
         )
 
         total_landfill += safe_float(
-            getattr(
-                textile,
-                "estimated_landfill_diversion_kg",
-                None,
+            environmental.get(
+                "estimated_landfill_diversion_kg"
             )
         )
 
         total_resource_recovery += safe_float(
-            getattr(
-                textile,
-                "estimated_resource_recovery_kg",
-                None,
+            environmental.get(
+                "estimated_resource_recovery_kg"
             )
         )
 
@@ -334,29 +490,46 @@ def calculate_circular_economy_analytics(
         2,
     )
 
-    average_sustainability = round(
-        sustainability_total / sustainability_count,
-        2,
-    ) if sustainability_count else 0
+    average_sustainability = (
+        round(
+            sustainability_total
+            / sustainability_count,
+            2,
+        )
+        if sustainability_count
+        else 0
+    )
 
-    average_circularity = round(
-        circularity_total / circularity_count,
-        2,
-    ) if circularity_count else 0
+    average_circularity = (
+        round(
+            circularity_total
+            / circularity_count,
+            2,
+        )
+        if circularity_count
+        else 0
+    )
 
     # ======================================================
     # Most Common Values
     # ======================================================
 
     most_detected_fabric = (
+
         fabric_counter.most_common(1)[0][0]
+
         if fabric_counter
+
         else "None"
     )
 
     most_recommended_action = (
-        recommendation_counter.most_common(1)[0][0]
+
+        recommendation_counter
+        .most_common(1)[0][0]
+
         if recommendation_counter
+
         else "None"
     )
 
