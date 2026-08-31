@@ -1,29 +1,331 @@
+import { useContext, useEffect, useState } from "react";
+
 import {
   AppBar,
   Toolbar,
+  Box,
   Typography,
   IconButton,
-  Box,
-  Avatar,
   Tooltip,
-  useTheme,
+  Avatar,
+  Badge,
+  Menu,
+  MenuItem,
+  Divider,
+  Button,
+  CircularProgress,
 } from "@mui/material";
 
-import {
-  LightMode,
-  DarkMode,
-  NotificationsNone,
-} from "@mui/icons-material";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import RecyclingIcon from "@mui/icons-material/Recycling";
+import DeleteIcon from "@mui/icons-material/Delete";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
 
-import { useContext } from "react";
 import { ColorModeContext } from "../theme/ColorModeContext";
+
+import {
+  DRAWER_WIDTH,
+  NAVBAR_HEIGHT,
+} from "./layoutConfig";
+
+import api from "../services/api";
+
 
 export default function Navbar() {
 
-  const theme = useTheme();
-
-  const { toggleColorMode } =
+  const { toggleColorMode, mode } =
     useContext(ColorModeContext);
+
+
+  // ==========================================================
+  // NOTIFICATION STATES
+  // ==========================================================
+
+  const [anchorEl, setAnchorEl] =
+    useState(null);
+
+  const [notifications, setNotifications] =
+    useState([]);
+
+  const [loadingNotifications, setLoadingNotifications] =
+    useState(false);
+
+
+  const notificationOpen =
+    Boolean(anchorEl);
+
+
+  // ==========================================================
+  // GET NOTIFICATIONS
+  // ==========================================================
+
+  const loadNotifications = async () => {
+
+    try {
+
+      setLoadingNotifications(true);
+
+      const token =
+        localStorage.getItem(
+          "access_token"
+        );
+
+      const response = await api.get(
+        "/notifications/",
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      setNotifications(
+        response.data?.data || []
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Notification loading error:",
+        error
+      );
+
+    } finally {
+
+      setLoadingNotifications(false);
+
+    }
+
+  };
+
+
+  // ==========================================================
+  // LOAD NOTIFICATIONS ON START
+  // ==========================================================
+
+  useEffect(() => {
+
+    loadNotifications();
+
+  }, []);
+
+
+  // ==========================================================
+  // OPEN NOTIFICATION MENU
+  // ==========================================================
+
+  const handleNotificationClick = (
+    event
+  ) => {
+
+    setAnchorEl(
+      event.currentTarget
+    );
+
+    loadNotifications();
+
+  };
+
+
+  // ==========================================================
+  // CLOSE MENU
+  // ==========================================================
+
+  const handleNotificationClose = () => {
+
+    setAnchorEl(null);
+
+  };
+
+
+  // ==========================================================
+  // UNREAD COUNT
+  // ==========================================================
+
+  const unreadCount =
+    notifications.filter(
+      (notification) =>
+        !notification.is_read
+    ).length;
+
+
+  // ==========================================================
+  // MARK SINGLE NOTIFICATION AS READ
+  // ==========================================================
+
+  const handleMarkAsRead = async (
+    notification
+  ) => {
+
+    try {
+
+      const token =
+        localStorage.getItem(
+          "access_token"
+        );
+
+      if (!notification.is_read) {
+
+        await api.put(
+          `/notifications/${notification.id}/read`,
+          {},
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+      }
+
+
+      setNotifications((previous) =>
+        previous.map((item) =>
+          item.id === notification.id
+            ? {
+                ...item,
+                is_read: true,
+              }
+            : item
+        )
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Mark notification read error:",
+        error
+      );
+
+    }
+
+  };
+
+
+  // ==========================================================
+  // MARK ALL AS READ
+  // ==========================================================
+
+  const handleMarkAllAsRead =
+    async () => {
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "access_token"
+          );
+
+        await api.put(
+          "/notifications/mark-all-read",
+          {},
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+
+        setNotifications((previous) =>
+          previous.map((notification) => ({
+            ...notification,
+            is_read: true,
+          }))
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Mark all notifications error:",
+          error
+        );
+
+      }
+
+    };
+
+
+  // ==========================================================
+  // DELETE NOTIFICATION
+  // ==========================================================
+
+  const handleDeleteNotification =
+    async (
+      event,
+      notificationId
+    ) => {
+
+      event.stopPropagation();
+
+      try {
+
+        const token =
+          localStorage.getItem(
+            "access_token"
+          );
+
+        await api.delete(
+          `/notifications/${notificationId}`,
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`,
+            },
+          }
+        );
+
+
+        setNotifications((previous) =>
+          previous.filter(
+            (notification) =>
+              notification.id !==
+              notificationId
+          )
+        );
+
+      } catch (error) {
+
+        console.error(
+          "Delete notification error:",
+          error
+        );
+
+      }
+
+    };
+
+
+  // ==========================================================
+  // FORMAT DATE
+  // ==========================================================
+
+  const formatDate = (
+    dateString
+  ) => {
+
+    if (!dateString) {
+
+      return "Just now";
+
+    }
+
+    const date =
+      new Date(dateString);
+
+    return date.toLocaleString();
+
+  };
+
+
+  // ==========================================================
+  // UI
+  // ==========================================================
 
   return (
 
@@ -31,75 +333,582 @@ export default function Navbar() {
       position="fixed"
       elevation={0}
       sx={{
-        backdropFilter: "blur(18px)",
-        background:
-          theme.palette.mode === "dark"
-            ? "rgba(15,23,42,0.85)"
-            : "rgba(255,255,255,0.85)",
+        height:
+          `${NAVBAR_HEIGHT}px`,
 
-        borderBottom:
-          "1px solid rgba(255,255,255,0.08)",
+        bgcolor:
+          "background.paper",
 
         color:
-          theme.palette.text.primary,
+          "text.primary",
+
+        borderBottom:
+          "1px solid",
+
+        borderColor:
+          "divider",
+
+        zIndex: (theme) =>
+          theme.zIndex.drawer + 1,
       }}
     >
 
-      <Toolbar>
+      <Toolbar
+        disableGutters
+        sx={{
+          minHeight:
+            `${NAVBAR_HEIGHT}px !important`,
 
-        <Typography
-          variant="h5"
+          height:
+            NAVBAR_HEIGHT,
+
+          display:
+            "flex",
+
+          width:
+            "100%",
+        }}
+      >
+
+        {/* ==================================================
+            LEFT LOGO AREA
+        ================================================== */}
+
+        <Box
           sx={{
-            fontWeight: 700,
-            letterSpacing: 1,
+            width:
+              DRAWER_WIDTH,
+
+            height:
+              "100%",
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            px: 3,
+
+            boxSizing:
+              "border-box",
+
+            borderRight:
+              "1px solid",
+
+            borderColor:
+              "divider",
           }}
         >
-          🧵 TextileAI
-        </Typography>
 
-        <Box sx={{ flexGrow: 1 }} />
+          <Avatar
+            sx={{
+              bgcolor:
+                "#22c55e",
 
-        <Tooltip title="Notifications">
+              mr: 1.5,
+            }}
+          >
+            <RecyclingIcon />
+          </Avatar>
 
-          <IconButton>
 
-            <NotificationsNone />
+          <Box>
 
-          </IconButton>
+            <Typography
+              fontWeight="bold"
+              fontSize={20}
+            >
+              TextileAI
+            </Typography>
 
-        </Tooltip>
 
-        <Tooltip title="Change Theme">
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              AI Waste Intelligence
+            </Typography>
 
-          <IconButton
-            onClick={toggleColorMode}
+          </Box>
+
+        </Box>
+
+
+        {/* ==================================================
+            RIGHT NAVBAR AREA
+        ================================================== */}
+
+        <Box
+          sx={{
+            flexGrow: 1,
+
+            height:
+              "100%",
+
+            display:
+              "flex",
+
+            alignItems:
+              "center",
+
+            justifyContent:
+              "flex-end",
+
+            px: 3,
+
+            gap: 2,
+          }}
+        >
+
+          {/* DARK / LIGHT MODE */}
+
+          <Tooltip
+            title={
+              mode === "dark"
+                ? "Switch to Light Mode"
+                : "Switch to Dark Mode"
+            }
           >
 
-            {
-              theme.palette.mode === "dark"
+            <IconButton
+              onClick={
+                toggleColorMode
+              }
+              sx={{
+                border:
+                  "1px solid",
 
-                ?
+                borderColor:
+                  "divider",
 
-                <LightMode />
+                width: 48,
 
-                :
+                height: 48,
+              }}
+            >
 
-                <DarkMode />
+              {mode === "dark" ? (
+                <LightModeIcon />
+              ) : (
+                <DarkModeIcon />
+              )}
+
+            </IconButton>
+
+          </Tooltip>
+
+
+          {/* ==================================================
+              NOTIFICATIONS
+          ================================================== */}
+
+          <Tooltip title="Notifications">
+
+            <IconButton
+              onClick={
+                handleNotificationClick
+              }
+              sx={{
+                border:
+                  "1px solid",
+
+                borderColor:
+                  "divider",
+
+                width: 48,
+
+                height: 48,
+              }}
+            >
+
+              <Badge
+                badgeContent={
+                  unreadCount
+                }
+                color="error"
+                max={99}
+              >
+
+                <NotificationsNoneIcon />
+
+              </Badge>
+
+            </IconButton>
+
+          </Tooltip>
+
+
+          {/* ==================================================
+              NOTIFICATION MENU
+          ================================================== */}
+
+          <Menu
+            anchorEl={anchorEl}
+
+            open={
+              notificationOpen
             }
 
-          </IconButton>
+            onClose={
+              handleNotificationClose
+            }
 
-        </Tooltip>
+            PaperProps={{
+              sx: {
+                width: 380,
 
-        <Avatar
-          sx={{
-            ml: 2,
-            bgcolor: "#2563eb",
-            cursor: "pointer",
-          }}
-        >
-          G
-        </Avatar>
+                maxWidth:
+                  "calc(100vw - 30px)",
+
+                maxHeight: 500,
+
+                borderRadius: 3,
+
+                mt: 1,
+
+                overflow:
+                  "hidden",
+              },
+            }}
+          >
+
+            {/* HEADER */}
+
+            <Box
+              sx={{
+                px: 2.5,
+
+                py: 2,
+
+                display:
+                  "flex",
+
+                alignItems:
+                  "center",
+
+                justifyContent:
+                  "space-between",
+              }}
+            >
+
+              <Typography
+                variant="h6"
+                fontWeight="bold"
+              >
+                Notifications
+              </Typography>
+
+
+              {unreadCount > 0 && (
+
+                <Button
+                  size="small"
+
+                  startIcon={
+                    <DoneAllIcon />
+                  }
+
+                  onClick={
+                    handleMarkAllAsRead
+                  }
+                >
+                  Mark all read
+                </Button>
+
+              )}
+
+            </Box>
+
+
+            <Divider />
+
+
+            {/* LOADING */}
+
+            {loadingNotifications && (
+
+              <Box
+                sx={{
+                  py: 5,
+
+                  display:
+                    "flex",
+
+                  justifyContent:
+                    "center",
+                }}
+              >
+
+                <CircularProgress
+                  size={30}
+                />
+
+              </Box>
+
+            )}
+
+
+            {/* EMPTY STATE */}
+
+            {!loadingNotifications &&
+              notifications.length === 0 && (
+
+              <Box
+                sx={{
+                  py: 5,
+
+                  px: 3,
+
+                  textAlign:
+                    "center",
+                }}
+              >
+
+                <NotificationsNoneIcon
+                  sx={{
+                    fontSize: 45,
+
+                    color:
+                      "text.secondary",
+
+                    mb: 1,
+                  }}
+                />
+
+                <Typography
+                  fontWeight="bold"
+                >
+                  No Notifications
+                </Typography>
+
+
+                <Typography
+                  variant="body2"
+
+                  color="text.secondary"
+
+                  sx={{
+                    mt: 0.5,
+                  }}
+                >
+                  You're all caught up!
+                </Typography>
+
+              </Box>
+
+            )}
+
+
+            {/* NOTIFICATION LIST */}
+
+            {!loadingNotifications &&
+              notifications.map(
+                (notification) => (
+
+                  <MenuItem
+                    key={
+                      notification.id
+                    }
+
+                    onClick={() =>
+                      handleMarkAsRead(
+                        notification
+                      )
+                    }
+
+                    sx={{
+                      whiteSpace:
+                        "normal",
+
+                      py: 1.8,
+
+                      px: 2.5,
+
+                      display:
+                        "flex",
+
+                      alignItems:
+                        "flex-start",
+
+                      gap: 1.5,
+
+                      bgcolor:
+                        notification.is_read
+                          ? "transparent"
+                          : theme =>
+                              theme.palette.mode ===
+                              "dark"
+                                ? "rgba(37,99,235,.12)"
+                                : "#eff6ff",
+
+                      borderBottom:
+                        "1px solid",
+
+                      borderColor:
+                        "divider",
+                    }}
+                  >
+
+                    {/* Notification Icon */}
+
+                    <Avatar
+                      sx={{
+                        width: 40,
+
+                        height: 40,
+
+                        bgcolor:
+                          notification.notification_type ===
+                          "warning"
+                            ? "#f59e0b"
+                            : notification.notification_type ===
+                              "recycling"
+                            ? "#16a34a"
+                            : notification.notification_type ===
+                              "sustainability"
+                            ? "#7c3aed"
+                            : "#2563eb",
+                      }}
+                    >
+
+                      <NotificationsNoneIcon />
+
+                    </Avatar>
+
+
+                    {/* Notification Content */}
+
+                    <Box
+                      sx={{
+                        flexGrow: 1,
+
+                        minWidth: 0,
+                      }}
+                    >
+
+                      <Typography
+                        fontWeight={
+                          notification.is_read
+                            ? 500
+                            : 800
+                        }
+
+                        sx={{
+                          fontSize:
+                            "0.95rem",
+                        }}
+                      >
+                        {
+                          notification.title
+                        }
+                      </Typography>
+
+
+                      <Typography
+                        variant="body2"
+
+                        color="text.secondary"
+
+                        sx={{
+                          mt: 0.5,
+
+                          whiteSpace:
+                            "normal",
+                        }}
+                      >
+                        {
+                          notification.message
+                        }
+                      </Typography>
+
+
+                      <Typography
+                        variant="caption"
+
+                        color="text.secondary"
+
+                        sx={{
+                          display:
+                            "block",
+
+                          mt: 0.8,
+                        }}
+                      >
+                        {
+                          formatDate(
+                            notification.created_at
+                          )
+                        }
+                      </Typography>
+
+                    </Box>
+
+
+                    {/* DELETE */}
+
+                    <IconButton
+                      size="small"
+
+                      onClick={(event) =>
+                        handleDeleteNotification(
+                          event,
+                          notification.id
+                        )
+                      }
+                    >
+
+                      <DeleteIcon
+                        fontSize="small"
+                      />
+
+                    </IconButton>
+
+                  </MenuItem>
+
+                )
+              )}
+
+          </Menu>
+
+
+          {/* ==================================================
+              USER
+          ================================================== */}
+
+          <Avatar
+            sx={{
+              bgcolor:
+                "#166534",
+
+              width: 48,
+
+              height: 48,
+            }}
+          >
+            G
+          </Avatar>
+
+
+          <Box>
+
+            <Typography
+              fontWeight="medium"
+            >
+              Gauresh Dwivedi
+            </Typography>
+
+
+            <Typography
+              variant="body2"
+              color="text.secondary"
+            >
+              User
+            </Typography>
+
+          </Box>
+
+        </Box>
 
       </Toolbar>
 

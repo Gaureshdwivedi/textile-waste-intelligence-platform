@@ -26,6 +26,9 @@ from app.crud.textile import (
     delete_textile,
 )
 
+from app.crud.notification import (
+    create_notification
+)
 from app.schemas.textile import TextileUpdate
 
 from app.services.sustainability import (
@@ -641,6 +644,101 @@ async def upload_textile(
                 f"Could not save textile: {error}"
             ),
         )
+        
+    # ======================================================
+    # CREATE NOTIFICATIONS
+    # ======================================================
+
+    try:
+
+        # --------------------------------------------------
+        # AI ANALYSIS NOTIFICATION
+        # --------------------------------------------------
+
+        create_notification(
+
+            db=db,
+
+            user_id=current_user.id,
+
+            title="AI Analysis Complete",
+
+            message=(
+                f"Your textile was identified as "
+                f"{prediction} with "
+                f"{confidence}% confidence."
+            ),
+
+            notification_type="info",
+        )
+
+
+        # --------------------------------------------------
+        # RECYCLING RECOMMENDATION NOTIFICATION
+        # --------------------------------------------------
+
+        create_notification(
+
+            db=db,
+
+            user_id=current_user.id,
+
+            title="Recycling Recommendation",
+
+            message=(
+                f"{recyclability} recyclability detected. "
+                f"Recommended action: "
+                f"{recommendation_result['primary_action']}."
+            ),
+
+            notification_type="recycling",
+        )
+
+
+        # --------------------------------------------------
+        # SUSTAINABILITY NOTIFICATION
+        # --------------------------------------------------
+
+        sustainability_score = (
+            sustainability_result[
+                "sustainability_score"
+            ]
+        )
+
+        if sustainability_score >= 70:
+
+            create_notification(
+
+                db=db,
+
+                user_id=current_user.id,
+
+                title="Strong Sustainability Potential",
+
+                message=(
+                    f"This textile achieved a sustainability "
+                    f"score of {sustainability_score:.1f}/100 "
+                    f"with {sustainability_result['recovery_category']}."
+                ),
+
+                notification_type="sustainability",
+            )
+
+
+        print(
+            "\nNotifications created successfully."
+        )
+
+
+    except Exception as error:
+
+        # Notification failure should NOT stop
+        # the successful textile upload
+
+        print(
+            "Notification creation error:",
+            error
+        )    
 
     # ======================================================
     # RETURN COMPLETE RESULT
@@ -653,40 +751,34 @@ async def upload_textile(
         "message":
             "Upload and complete AI analysis successful",
 
+    # ======================================================
+    # COMPLETE TEXTILE DATA
+    # ======================================================
+
         "textile": {
 
-            "id":
-                textile.id,
+            "id": textile.id,
 
-            "textile_name":
-                textile.textile_name,
+            "textile_name": textile.textile_name,
 
-            "description":
-                textile.description,
+            "description": textile.description,
 
-            "image_path":
-                textile.image_path,
+            "image_path": textile.image_path,
 
-            # AI
-            "prediction":
-                textile.prediction,
+        # AI
+            "prediction": textile.prediction,
 
-            "confidence":
-                textile.confidence,
+            "confidence": textile.confidence,
 
-            "category":
-                textile.category,
+            "category": textile.category,
 
-            "recyclable":
-                textile.recyclable,
+            "recyclable": textile.recyclable,
 
-            "recommendation":
-                textile.recommendation,
+            "recommendation": textile.recommendation,
 
-            "top_predictions":
-                top_predictions,
+            "top_predictions": top_predictions,
 
-            # Sustainability
+        # Sustainability
             "sustainability_score":
                 textile.sustainability_score,
 
@@ -696,14 +788,14 @@ async def upload_textile(
             "recovery_category":
                 textile.recovery_category,
 
-            # Recommendation
+        # Recommendation Intelligence
             "primary_action":
                 textile.primary_action,
 
             "alternative_action":
                 textile.alternative_action,
 
-            # Environmental
+        # Environmental Impact
             "estimated_co2_savings_kg":
                 textile.estimated_co2_savings_kg,
 
@@ -712,7 +804,6 @@ async def upload_textile(
 
             "estimated_landfill_diversion_kg":
                 textile.estimated_landfill_diversion_kg,
-
             "estimated_resource_recovery_kg":
                 textile.estimated_resource_recovery_kg,
 
@@ -726,18 +817,90 @@ async def upload_textile(
                 textile.uploaded_at,
         },
 
-        "ai_analysis":
-            ai_result,
+    # ======================================================
+    # COMPLETE AI ANALYSIS FOR FRONTEND
+    # ======================================================
 
-        "sustainability":
-            sustainability_result,
+        "ai_analysis": {
 
-        "recommendation_analysis":
-            recommendation_result,
+        # Basic AI Prediction
+            "fabric": prediction,
 
-        "environmental_impact":
-            environmental_result,
-    }
+            "confidence": confidence,
+
+            "category": category,
+
+            "recyclability": recyclability,
+
+            "recommendation": recommendation,
+
+            "top_predictions": top_predictions,
+
+        # Sustainability Intelligence
+            "sustainability_score":
+                sustainability_result.get(
+                    "sustainability_score"
+                ),
+
+            "circularity_score":
+                sustainability_result.get(
+                    "circularity_score"
+                ),
+
+            "recovery_category":
+                sustainability_result.get(
+                    "recovery_category"
+                ),
+
+        # Recommendation Intelligence
+            "primary_action":
+                recommendation_result.get(
+                    "primary_action"
+                ),
+
+            "alternative_action":
+                recommendation_result.get(
+                    "alternative_action"
+                ),
+
+            "priority":
+                recommendation_result.get(
+                    "priority"
+                ),
+
+        # Environmental Impact
+            "estimated_co2_savings_kg":
+                environmental_result.get(
+                    "estimated_co2_savings_kg"
+                ),
+
+            "estimated_water_savings_liters":
+                environmental_result.get(
+                    "estimated_water_savings_liters"
+                ),
+
+            "estimated_landfill_diversion_kg":
+                environmental_result.get(
+                    "estimated_landfill_diversion_kg"
+                ),
+
+            "estimated_resource_recovery_kg":
+                environmental_result.get(
+                    "estimated_resource_recovery_kg"
+                ),
+
+            "environmental_benefit_score":
+                environmental_result.get(
+                    "environmental_benefit_score"
+                ),
+
+            "environmental_benefit":
+                environmental_result.get(
+                    "environmental_benefit",
+                    "Not available"
+                ),
+        },
+}
 
 
 # ==========================================================

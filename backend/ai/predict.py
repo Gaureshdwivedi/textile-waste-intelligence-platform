@@ -19,7 +19,7 @@ from ai.config import (
 
 MODEL_PATH = (
     Path(MODELS_DIR)
-    / "textile_model_v4_best.keras"
+    / "textile_model_v6_best.keras"
 )
 
 
@@ -27,7 +27,7 @@ MODEL_PATH = (
 # LOAD MODEL
 # ==========================================================
 
-print("\nLoading Textile AI V4 model...")
+print("\nLoading Textile AI V6 model...")
 print(f"Model: {MODEL_PATH}")
 
 if not MODEL_PATH.exists():
@@ -39,7 +39,7 @@ model = tf.keras.models.load_model(
     MODEL_PATH
 )
 
-print("Textile AI V4 model loaded successfully!")
+print("Textile AI V6 model loaded successfully!")
 
 
 # ==========================================================

@@ -1,7 +1,6 @@
 import tensorflow as tf
 
 from tensorflow.keras import Model
-
 from tensorflow.keras.layers import (
     Dense,
     Dropout,
@@ -11,31 +10,33 @@ from tensorflow.keras.layers import (
     RandomZoom,
     RandomContrast,
 )
-
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.optimizers import Adam
 
-from ai.config import (
-    IMAGE_SIZE,
-    LEARNING_RATE,
-)
+from ai.config import IMAGE_SIZE
 
 
-def build_model(num_classes):
-
+def build_model(
+    num_classes,
+    learning_rate=1e-4,
+    fine_tune=False,
+):
     # ======================================================
     # Data Augmentation
     # ======================================================
 
-    augmentation = tf.keras.Sequential([
-        RandomFlip("horizontal"),
-        RandomRotation(0.15),
-        RandomZoom(0.20),
-        RandomContrast(0.15),
-    ], name="data_augmentation")
+    augmentation = tf.keras.Sequential(
+        [
+            RandomFlip("horizontal"),
+            RandomRotation(0.12),
+            RandomZoom(0.15),
+            RandomContrast(0.10),
+        ],
+        name="data_augmentation",
+    )
 
     # ======================================================
-    # MobileNetV2 Base Model
+    # MobileNetV2 Backbone
     # ======================================================
 
     base_model = MobileNetV2(
@@ -44,8 +45,42 @@ def build_model(num_classes):
         weights="imagenet",
     )
 
-    # Freeze pretrained backbone
-    base_model.trainable = False
+    # ======================================================
+    # Freeze / Fine-Tune
+    # ======================================================
+
+    if not fine_tune:
+
+        base_model.trainable = False
+
+    else:
+
+        base_model.trainable = True
+
+        # Freeze earlier layers.
+        #
+        # Only the later MobileNetV2 feature layers
+        # will adapt to textile-specific features.
+
+        fine_tune_from = 100
+
+        for layer in base_model.layers[
+            :fine_tune_from
+        ]:
+            layer.trainable = False
+
+        # Keep BatchNormalization frozen.
+        #
+        # This makes fine-tuning more stable on
+        # relatively small datasets.
+
+        for layer in base_model.layers:
+
+            if isinstance(
+                layer,
+                tf.keras.layers.BatchNormalization,
+            ):
+                layer.trainable = False
 
     # ======================================================
     # Input
@@ -66,7 +101,9 @@ def build_model(num_classes):
     # MobileNetV2 Preprocessing
     # ======================================================
 
-    x = tf.keras.applications.mobilenet_v2.preprocess_input(x)
+    x = tf.keras.applications.mobilenet_v2.preprocess_input(
+        x
+    )
 
     # ======================================================
     # Feature Extraction
@@ -84,7 +121,7 @@ def build_model(num_classes):
     x = GlobalAveragePooling2D()(x)
 
     x = Dropout(
-        0.35,
+        0.30,
         name="dropout_1",
     )(x)
 
@@ -95,7 +132,7 @@ def build_model(num_classes):
     )(x)
 
     x = Dropout(
-        0.25,
+        0.20,
         name="dropout_2",
     )(x)
 
@@ -112,7 +149,7 @@ def build_model(num_classes):
     model = Model(
         inputs=inputs,
         outputs=outputs,
-        name="Textile_MobileNetV2_V3",
+        name="Textile_MobileNetV2_V5",
     )
 
     # ======================================================
@@ -121,7 +158,7 @@ def build_model(num_classes):
 
     model.compile(
         optimizer=Adam(
-            learning_rate=LEARNING_RATE,
+            learning_rate=learning_rate,
         ),
         loss="sparse_categorical_crossentropy",
         metrics=["accuracy"],

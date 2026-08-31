@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-
 import { useTheme } from "@mui/material/styles";
 
 import {
@@ -258,39 +255,15 @@ export default function History() {
     >
 
       {/* =====================================================
-          TOP NAVBAR
-          ===================================================== */}
-
-      <Navbar />
-
-      {/* =====================================================
-          SIDEBAR
-          ===================================================== */}
-
-      <Sidebar />
-
-      {/* =====================================================
           MAIN CONTENT
           ===================================================== */}
 
       <Box
         sx={{
-          marginLeft: {
-            xs: 0,
-            md: "290px",
-          },
-
-          width: {
-            xs: "100%",
-            md: "calc(100% - 290px)",
-          },
+          width: "100%",
+          minWidth:0,
 
           minHeight: "100vh",
-
-          paddingTop: {
-            xs: "90px",
-            md: "105px",
-          },
 
           paddingBottom: 8,
 
@@ -309,18 +282,10 @@ export default function History() {
         <Box
           sx={{
             width: "100%",
-            maxWidth: "1200px",
+            maxWidth: "1400px",
 
-            marginLeft: "auto",
-            marginRight: "auto",
-
-            paddingLeft: {
-              xs: 2,
-              sm: 3,
-              md: 4,
-            },
-
-            paddingRight: {
+            margin: "0 auto",
+            px: {
               xs: 2,
               sm: 3,
               md: 4,

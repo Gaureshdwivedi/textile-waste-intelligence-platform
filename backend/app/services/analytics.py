@@ -15,7 +15,8 @@ Aggregates the user's textile analyses and produces:
 - Recommended recovery methods
 
 Also supports older records that were created before
-environmental impact values were stored in the database.
+environmental impact values and recommendation intelligence
+were stored in the database.
 """
 
 from collections import Counter
@@ -53,6 +54,127 @@ def normalize_text(value):
         return "Unknown"
 
     return str(value).strip()
+
+
+# ==========================================================
+# Helper: Get Recovery Action
+# ==========================================================
+
+def get_recovery_action(textile):
+
+    """
+    Return the best available recovery action.
+
+    Newer records already contain primary_action.
+
+    Older records may not have primary_action, so we derive
+    the recovery method from the existing recommendation
+    and fabric prediction.
+    """
+
+    # ------------------------------------------------------
+    # 1. Use stored primary action if available
+    # ------------------------------------------------------
+
+    primary_action = getattr(
+        textile,
+        "primary_action",
+        None,
+    )
+
+    if primary_action:
+
+        action = str(primary_action).strip()
+
+        if action and action.lower() != "unknown":
+            return action
+
+    # ------------------------------------------------------
+    # 2. Check old recommendation text
+    # ------------------------------------------------------
+
+    recommendation = str(
+        getattr(
+            textile,
+            "recommendation",
+            "",
+        )
+        or ""
+    ).lower()
+
+    if "chemical recycl" in recommendation:
+        return "Chemical Recycling"
+
+    if "mechanical recycl" in recommendation:
+        return "Mechanical Recycling"
+
+    if "industrial recycl" in recommendation:
+        return "Chemical Recycling"
+
+    if "reuse" in recommendation:
+        return "Reuse"
+
+    if "donat" in recommendation:
+        return "Reuse"
+
+    # ------------------------------------------------------
+    # 3. Fallback based on fabric prediction
+    # ------------------------------------------------------
+
+    prediction = str(
+        getattr(
+            textile,
+            "prediction",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+    # Synthetic materials commonly suitable for
+    # chemical recycling
+    chemical_recycling = {
+        "polyester",
+        "nylon",
+        "acrylic",
+        "spandex",
+        "elastane",
+    }
+
+    # Natural textile materials commonly suitable for
+    # mechanical recycling
+    mechanical_recycling = {
+        "cotton",
+        "denim",
+        "linen",
+        "corduroy",
+        "fleece",
+        "wool",
+        "jute",
+        "hemp",
+    }
+
+    # Materials where reuse/upcycling is generally
+    # a useful recovery option
+    reuse_materials = {
+        "silk",
+        "leather",
+        "velvet",
+    }
+
+    if prediction in chemical_recycling:
+        return "Chemical Recycling"
+
+    if prediction in mechanical_recycling:
+        return "Mechanical Recycling"
+
+    if prediction in reuse_materials:
+        return "Reuse"
+
+    # ------------------------------------------------------
+    # 4. No information available
+    # ------------------------------------------------------
+
+    return "Unknown"
 
 
 # ==========================================================
@@ -437,12 +559,10 @@ def calculate_circular_economy_analytics(
         # Recommendation
         # --------------------------------------------------
 
-        recommendation = normalize_text(
-            getattr(
-                textile,
-                "primary_action",
-                None,
-            )
+        # NEW:
+        # Supports both new and old database records
+        recommendation = get_recovery_action(
+            textile
         )
 
         recommendation_counter[

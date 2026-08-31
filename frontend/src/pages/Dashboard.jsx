@@ -31,15 +31,9 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 import api from "../services/api";
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
 import StatCard from "../components/StatCard";
 
 export default function Dashboard() {
-  // ==========================================================
-  // STATE
-  // ==========================================================
-
   const [history, setHistory] = useState([]);
   const [user, setUser] = useState(null);
   const [analytics, setAnalytics] = useState(null);
@@ -47,10 +41,6 @@ export default function Dashboard() {
 
   const theme = useTheme();
   const navigate = useNavigate();
-
-  // ==========================================================
-  // CHART COLORS
-  // ==========================================================
 
   const chartColors = [
     "#2563eb",
@@ -66,7 +56,7 @@ export default function Dashboard() {
   ];
 
   // ==========================================================
-  // LOAD DASHBOARD DATA
+  // LOAD DATA
   // ==========================================================
 
   useEffect(() => {
@@ -83,20 +73,15 @@ export default function Dashboard() {
         Authorization: `Bearer ${token}`,
       };
 
-      const [historyResponse, userResponse, analyticsResponse] =
-        await Promise.all([
-          api.get("/textiles/history", {
-            headers,
-          }),
-
-          api.get("/users/me", {
-            headers,
-          }),
-
-          api.get("/textiles/analytics", {
-            headers,
-          }),
-        ]);
+      const [
+        historyResponse,
+        userResponse,
+        analyticsResponse,
+      ] = await Promise.all([
+        api.get("/textiles/history", { headers }),
+        api.get("/users/me", { headers }),
+        api.get("/textiles/analytics", { headers }),
+      ]);
 
       setHistory(historyResponse.data?.data || []);
       setUser(userResponse.data);
@@ -114,7 +99,7 @@ export default function Dashboard() {
   };
 
   // ==========================================================
-  // DASHBOARD STATISTICS
+  // STATISTICS
   // ==========================================================
 
   const statistics = useMemo(() => {
@@ -137,7 +122,6 @@ export default function Dashboard() {
     const confidenceValues = history
       .map((item) => {
         const value = parseFloat(item.confidence);
-
         return Number.isFinite(value) ? value : null;
       })
       .filter((value) => value !== null);
@@ -150,19 +134,13 @@ export default function Dashboard() {
           ) / confidenceValues.length
         : 0;
 
-    // ========================================================
-    // MOST FREQUENT FABRIC
-    // ========================================================
-
     const fabricCounts = {};
 
     predictions.forEach((item) => {
-      const fabric = item.prediction;
+      if (!item.prediction) return;
 
-      if (!fabric) return;
-
-      fabricCounts[fabric] =
-        (fabricCounts[fabric] || 0) + 1;
+      fabricCounts[item.prediction] =
+        (fabricCounts[item.prediction] || 0) + 1;
     });
 
     let mostFrequentFabric = "No data";
@@ -195,12 +173,10 @@ export default function Dashboard() {
     const counts = {};
 
     history.forEach((item) => {
-      const fabric = item.prediction;
+      if (!item.prediction) return;
 
-      if (!fabric) return;
-
-      counts[fabric] =
-        (counts[fabric] || 0) + 1;
+      counts[item.prediction] =
+        (counts[item.prediction] || 0) + 1;
     });
 
     return Object.entries(counts)
@@ -226,67 +202,6 @@ export default function Dashboard() {
   }, [history]);
 
   // ==========================================================
-  // FORMAT DATE
-  // ==========================================================
-
-  const formatDate = (date) => {
-    if (!date) return "—";
-
-    const parsedDate = new Date(date);
-
-    if (Number.isNaN(parsedDate.getTime())) {
-      return "—";
-    }
-
-    return parsedDate.toLocaleString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  // ==========================================================
-  // CONFIDENCE COLOR
-  // ==========================================================
-
-  const getConfidenceColor = (confidence) => {
-    const value = parseFloat(confidence);
-
-    if (!Number.isFinite(value)) {
-      return "default";
-    }
-
-    if (value >= 80) return "success";
-
-    if (value >= 60) return "warning";
-
-    return "error";
-  };
-
-  // ==========================================================
-  // RECYCLE COLOR
-  // ==========================================================
-
-  const getRecycleColor = (value) => {
-    if (!value) return "default";
-
-    const recyclable =
-      String(value).toLowerCase();
-
-    if (recyclable === "high") {
-      return "success";
-    }
-
-    if (recyclable === "medium") {
-      return "warning";
-    }
-
-    return "error";
-  };
-
-  // ==========================================================
   // PIE CHART
   // ==========================================================
 
@@ -308,105 +223,94 @@ export default function Dashboard() {
           (item.value / total) * 100;
 
         const start = currentAngle;
-
         currentAngle += percentage;
 
         const color =
-          chartColors[
-            index % chartColors.length
-          ];
+          chartColors[index % chartColors.length];
 
         return `${color} ${start}% ${currentAngle}%`;
       }
     );
 
     return `conic-gradient(${segments.join(", ")})`;
-  }, [fabricDistribution, theme.palette.action.hover]);
+  }, [fabricDistribution, theme]);
 
   // ==========================================================
-  // LOADING STATE
+  // HELPERS
+  // ==========================================================
+
+  const formatDate = (date) => {
+    if (!date) return "—";
+
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return "—";
+    }
+
+    return parsedDate.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const getConfidenceColor = (confidence) => {
+    const value = parseFloat(confidence);
+
+    if (!Number.isFinite(value)) return "default";
+    if (value >= 80) return "success";
+    if (value >= 60) return "warning";
+
+    return "error";
+  };
+
+  const getRecycleColor = (value) => {
+    if (!value) return "default";
+
+    const recyclable = String(value).toLowerCase();
+
+    if (recyclable === "high") return "success";
+    if (recyclable === "medium") return "warning";
+
+    return "error";
+  };
+
+  // ==========================================================
+  // LOADING
   // ==========================================================
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          minHeight: "100vh",
-          bgcolor: theme.palette.background.default,
-        }}
-      >
-        <Navbar />
-
-        <Sidebar />
-
-        <Box
-          sx={{
-            ml: {
-              xs: 0,
-              md: "260px",
-            },
-            mt: "80px",
-            p: 4,
-          }}
-        >
-          <Typography
-            variant="h5"
-            fontWeight="bold"
-          >
+        <Box sx={{ width: "100%", m: 0, p: 0 }}>
+          <Typography variant="h5" fontWeight="bold">
             Loading Dashboard...
           </Typography>
         </Box>
-      </Box>
     );
   }
 
   // ==========================================================
-  // MAIN DASHBOARD
+  // MAIN PAGE
   // ==========================================================
 
   return (
-    <Box
-      sx={{
-        minHeight: "100vh",
-        bgcolor:
-          theme.palette.background.default,
-      }}
-    >
-      {/* =====================================================
-          NAVBAR
-      ====================================================== */}
-
-      <Navbar />
-
-      {/* =====================================================
-          SIDEBAR
-      ====================================================== */}
-
-      <Sidebar />
-
-      {/* =====================================================
-          MAIN CONTENT
-      ====================================================== */}
-
       <Box
         sx={{
-          ml: {
-            xs: 0,
-            md: "260px",
-          },
-          mt: "80px",
-          p: {
-            xs: 2,
-            md: 4,
-          },
+          width: "100%",
+          maxWidth: "none",
+          m: 0,
+          p: 0,
+          boxSizing: "border-box",
         }}
       >
-        {/* ===================================================
-            HEADER
-        ==================================================== */}
+        {/* HEADER */}
 
         <Box
           sx={{
+            width: "100%",
             display: "flex",
             justifyContent: "space-between",
             alignItems: {
@@ -421,25 +325,18 @@ export default function Dashboard() {
             mb: 4,
           }}
         >
-          <Box>
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-            >
-              Welcome{" "}
-              {user?.full_name || "User"} 👋
+          <Box sx={{ m: 0, p: 0 }}>
+            <Typography variant="h4" fontWeight="bold">
+              Welcome {user?.full_name || "User"} 👋
             </Typography>
 
             <Typography
               color="text.secondary"
               sx={{ mt: 0.5 }}
             >
-              AI Powered Textile Waste
-              Intelligence Platform
+              AI Powered Textile Waste Intelligence Platform
             </Typography>
           </Box>
-
-          {/* ANALYZE BUTTON */}
 
           <Button
             variant="contained"
@@ -451,210 +348,138 @@ export default function Dashboard() {
               px: 3,
               py: 1.4,
               fontWeight: "bold",
-              fontSize: 15,
               textTransform: "none",
-              boxShadow:
-                "0 8px 20px rgba(37,99,235,.25)",
             }}
           >
             Analyze Textile
           </Button>
         </Box>
 
-        {/* ===================================================
-            STAT CARDS
-        ==================================================== */}
+        {/* STAT CARDS */}
 
-        <Grid
-          container
-          spacing={3}
-        >
-          {/* TOTAL UPLOADS */}
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            lg={3}
-          >
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               title="Total Uploads"
-              value={
-                statistics.totalUploads
-              }
-              icon={
-                <CloudUploadIcon fontSize="large" />
-              }
+              value={statistics.totalUploads}
+              icon={<CloudUploadIcon fontSize="large" />}
               color="linear-gradient(135deg,#2563eb,#1d4ed8)"
             />
           </Grid>
 
-          {/* AI PREDICTIONS */}
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            lg={3}
-          >
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               title="AI Predictions"
-              value={
-                statistics.totalPredictions
-              }
-              icon={
-                <PsychologyIcon fontSize="large" />
-              }
+              value={statistics.totalPredictions}
+              icon={<PsychologyIcon fontSize="large" />}
               color="linear-gradient(135deg,#7c3aed,#5b21b6)"
             />
           </Grid>
 
-          {/* RECYCLABLE */}
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            lg={3}
-          >
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               title="Highly Recyclable"
-              value={
-                statistics.highlyRecyclable
-              }
-              icon={
-                <RecyclingIcon fontSize="large" />
-              }
+              value={statistics.highlyRecyclable}
+              icon={<RecyclingIcon fontSize="large" />}
               color="linear-gradient(135deg,#16a34a,#15803d)"
             />
           </Grid>
 
-          {/* CONFIDENCE */}
-
-          <Grid
-            item
-            xs={12}
-            sm={6}
-            lg={3}
-          >
+          <Grid item xs={12} sm={6} lg={3}>
             <StatCard
               title="Avg. AI Confidence"
               value={
                 statistics.totalPredictions > 0
-                  ? `${statistics.averageConfidence.toFixed(
-                      1
-                    )}%`
+                  ? `${statistics.averageConfidence.toFixed(1)}%`
                   : "--"
               }
-              icon={
-                <InsightsIcon fontSize="large" />
-              }
+              icon={<InsightsIcon fontSize="large" />}
               color="linear-gradient(135deg,#ea580c,#c2410c)"
             />
           </Grid>
         </Grid>
 
-        {/* ===================================================
-            MILESTONE 3 - SUSTAINABILITY OVERVIEW
-        ==================================================== */}
+        {/* SUSTAINABILITY */}
 
-        <Box sx={{ mt: 4 }}>
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h5" fontWeight="bold">
-              Sustainability Overview
-            </Typography>
+        <Box sx={{ mt: 5, mb: 3 }}>
+          <Typography variant="h5" fontWeight="bold">
+            Sustainability Overview
+          </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
-              Circular-economy intelligence generated from your textile
-              analysis history.
-            </Typography>
-          </Box>
-
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} lg={3}>
-              <StatCard
-                title="Avg. Sustainability"
-                value={
-                  analytics &&
-                  analytics.average_sustainability_score > 0
-                    ? `${analytics.average_sustainability_score}%`
-                    : "--"
-                }
-                icon={<InsightsIcon fontSize="large" />}
-                color="linear-gradient(135deg,#059669,#047857)"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <StatCard
-                title="Avg. Circularity"
-                value={
-                  analytics &&
-                  analytics.average_circularity_score > 0
-                    ? `${analytics.average_circularity_score}%`
-                    : "--"
-                }
-                icon={<RecyclingIcon fontSize="large" />}
-                color="linear-gradient(135deg,#0891b2,#0e7490)"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <StatCard
-                title="High Recovery"
-                value={analytics ? analytics.high_recovery_count : "--"}
-                icon={<RecyclingIcon fontSize="large" />}
-                color="linear-gradient(135deg,#16a34a,#15803d)"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} lg={3}>
-              <StatCard
-                title="Most Detected"
-                value={
-                  analytics && analytics.most_detected_fabric !== "None"
-                    ? analytics.most_detected_fabric
-                    : "--"
-                }
-                icon={<PsychologyIcon fontSize="large" />}
-                color="linear-gradient(135deg,#7c3aed,#5b21b6)"
-              />
-            </Grid>
-          </Grid>
+          <Typography color="text.secondary">
+            Circular-economy intelligence generated from your textile analysis history.
+          </Typography>
         </Box>
 
-        {/* ===================================================
-            MILESTONE 3 - ENVIRONMENTAL IMPACT
-        ==================================================== */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={6} lg={3}>
+            <StatCard
+              title="Avg. Sustainability"
+              value={
+                analytics?.average_sustainability_score
+                  ? `${analytics.average_sustainability_score}%`
+                  : "--"
+              }
+              icon={<InsightsIcon fontSize="large" />}
+              color="linear-gradient(135deg,#059669,#047857)"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} lg={3}>
+            <StatCard
+              title="Avg. Circularity"
+              value={
+                analytics?.average_circularity_score
+                  ? `${analytics.average_circularity_score}%`
+                  : "--"
+              }
+              icon={<RecyclingIcon fontSize="large" />}
+              color="linear-gradient(135deg,#0891b2,#0e7490)"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} lg={3}>
+            <StatCard
+              title="High Recovery"
+              value={analytics?.high_recovery_count ?? "--"}
+              icon={<RecyclingIcon fontSize="large" />}
+              color="linear-gradient(135deg,#16a34a,#15803d)"
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} lg={3}>
+            <StatCard
+              title="Most Detected"
+              value={
+                analytics?.most_detected_fabric &&
+                analytics.most_detected_fabric !== "None"
+                  ? analytics.most_detected_fabric
+                  : "--"
+              }
+              icon={<PsychologyIcon fontSize="large" />}
+              color="linear-gradient(135deg,#7c3aed,#5b21b6)"
+            />
+          </Grid>
+        </Grid>
+
+        {/* ENVIRONMENTAL IMPACT */}
 
         <Paper
           elevation={0}
           sx={{
-            mt: 3,
+            mt: 4,
             p: 4,
             borderRadius: 4,
             border: `1px solid ${theme.palette.divider}`,
-            bgcolor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
           }}
         >
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" fontWeight="bold">
-              Estimated Environmental Impact
-            </Typography>
+          <Typography variant="h6" fontWeight="bold">
+            Estimated Environmental Impact
+          </Typography>
 
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mt: 0.5 }}
-            >
-              Model-based estimates from textile sustainability factors.
-            </Typography>
-          </Box>
+          <Typography color="text.secondary" sx={{ mb: 3 }}>
+            Model-based estimates from textile sustainability factors.
+          </Typography>
 
           <Grid container spacing={3}>
             {[
@@ -680,66 +505,34 @@ export default function Dashboard() {
                   sx={{
                     p: 2.5,
                     borderRadius: 3,
-                    bgcolor: theme.palette.action.hover,
-                    height: "100%",
+                    bgcolor: "action.hover",
                   }}
                 >
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography color="text.secondary">
                     {label}
                   </Typography>
 
-                  <Typography
-                    variant="h5"
-                    fontWeight="bold"
-                    sx={{ mt: 0.5 }}
-                  >
+                  <Typography variant="h5" fontWeight="bold">
                     {analytics ? value : "--"}
                   </Typography>
                 </Box>
               </Grid>
             ))}
           </Grid>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 3 }}
-          >
-            These values are estimates based on the sustainability model and
-            should not be interpreted as direct physical measurements.
-          </Typography>
         </Paper>
 
-        {/* ===================================================
-            ANALYTICS SECTION
-        ==================================================== */}
+        {/* DISTRIBUTION + AI PERFORMANCE */}
 
-        <Grid
-          container
-          spacing={3}
-          sx={{ mt: 1 }}
-        >
-          {/* =================================================
-              FABRIC DISTRIBUTION
-          ================================================== */}
-
-          <Grid
-            item
-            xs={12}
-            lg={7}
-          >
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid item xs={12} lg={7}>
             <Paper
               elevation={0}
               sx={{
                 p: 4,
                 borderRadius: 4,
-                border: `1px solid ${
-                  theme.palette.divider
-                }`,
+                border: `1px solid ${theme.palette.divider}`,
               }}
             >
-              {/* HEADER */}
-
               <Box
                 sx={{
                   display: "flex",
@@ -751,19 +544,12 @@ export default function Dashboard() {
                 <PieChartIcon color="primary" />
 
                 <Box>
-                  <Typography
-                    variant="h6"
-                    fontWeight="bold"
-                  >
+                  <Typography variant="h6" fontWeight="bold">
                     Textile Distribution
                   </Typography>
 
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    Distribution of detected
-                    textile types
+                  <Typography color="text.secondary">
+                    Distribution of detected textile types
                   </Typography>
                 </Box>
               </Box>
@@ -775,15 +561,10 @@ export default function Dashboard() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    textAlign: "center",
                   }}
                 >
-                  <Typography
-                    color="text.secondary"
-                  >
-                    Upload textile images to
-                    generate distribution
-                    analytics.
+                  <Typography color="text.secondary">
+                    Upload textile images to generate distribution analytics.
                   </Typography>
                 </Box>
               ) : (
@@ -791,180 +572,108 @@ export default function Dashboard() {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "center",
+                    justifyContent: "flex-start",
                     gap: 5,
                     flexWrap: "wrap",
                   }}
                 >
-                  {/* ===============================
-                      PIE CHART
-                  ================================ */}
-
                   <Box
                     sx={{
-                      position: "relative",
-                      width: {
-                        xs: 220,
-                        sm: 260,
-                      },
-                      height: {
-                        xs: 220,
-                        sm: 260,
-                      },
+                      width: 250,
+                      height: 250,
                       borderRadius: "50%",
-                      background:
-                        pieChartBackground,
-                      boxShadow:
-                        "0 10px 30px rgba(0,0,0,.12)",
+                      background: pieChartBackground,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       flexShrink: 0,
                     }}
                   >
-                    {/* INNER CIRCLE */}
-
                     <Box
                       sx={{
-                        width: {
-                          xs: 120,
-                          sm: 145,
-                        },
-                        height: {
-                          xs: 120,
-                          sm: 145,
-                        },
+                        width: 140,
+                        height: 140,
                         borderRadius: "50%",
-                        bgcolor:
-                          theme.palette
-                            .background
-                            .paper,
+                        bgcolor: "background.paper",
                         display: "flex",
-                        flexDirection:
-                          "column",
+                        flexDirection: "column",
                         alignItems: "center",
-                        justifyContent:
-                          "center",
-                        boxShadow:
-                          "0 3px 15px rgba(0,0,0,.08)",
+                        justifyContent: "center",
                       }}
                     >
-                      <Typography
-                        variant="h4"
-                        fontWeight="bold"
-                      >
+                      <Typography variant="h4" fontWeight="bold">
                         {history.length}
                       </Typography>
 
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                      >
+                      <Typography color="text.secondary">
                         Analyses
                       </Typography>
                     </Box>
                   </Box>
 
-                  {/* ===============================
-                      LEGEND
-                  ================================ */}
+                  <Box sx={{ minWidth: 220 }}>
+                    {fabricDistribution.map((item, index) => {
+                      const total = fabricDistribution.reduce(
+                        (sum, fabric) => sum + fabric.value,
+                        0
+                      );
 
-                  <Box
-                    sx={{
-                      minWidth: 220,
-                      maxWidth: 300,
-                      width: "100%",
-                    }}
-                  >
-                    {fabricDistribution.map(
-                      (item, index) => {
-                        const total =
-                          fabricDistribution.reduce(
-                            (sum, fabric) =>
-                              sum + fabric.value,
-                            0
-                          );
+                      const percentage = (
+                        (item.value / total) *
+                        100
+                      ).toFixed(1);
 
-                        const percentage = (
-                          (item.value / total) *
-                          100
-                        ).toFixed(1);
-
-                        return (
+                      return (
+                        <Box
+                          key={item.name}
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 3,
+                            py: 1,
+                          }}
+                        >
                           <Box
-                            key={item.name}
                             sx={{
                               display: "flex",
-                              alignItems:
-                                "center",
-                              justifyContent:
-                                "space-between",
-                              py: 0.8,
+                              alignItems: "center",
+                              gap: 1,
                             }}
                           >
                             <Box
                               sx={{
-                                display: "flex",
-                                alignItems:
-                                  "center",
-                                gap: 1,
+                                width: 12,
+                                height: 12,
+                                borderRadius: "50%",
+                                bgcolor:
+                                  chartColors[
+                                    index % chartColors.length
+                                  ],
                               }}
-                            >
-                              <Box
-                                sx={{
-                                  width: 12,
-                                  height: 12,
-                                  borderRadius:
-                                    "50%",
-                                  backgroundColor:
-                                    chartColors[
-                                      index %
-                                        chartColors.length
-                                    ],
-                                  flexShrink: 0,
-                                }}
-                              />
+                            />
 
-                              <Typography
-                                variant="body2"
-                              >
-                                {item.name}
-                              </Typography>
-                            </Box>
-
-                            <Typography
-                              variant="body2"
-                              fontWeight="bold"
-                            >
-                              {percentage}%
-                            </Typography>
+                            <Typography>{item.name}</Typography>
                           </Box>
-                        );
-                      }
-                    )}
+
+                          <Typography fontWeight="bold">
+                            {percentage}%
+                          </Typography>
+                        </Box>
+                      );
+                    })}
                   </Box>
                 </Box>
               )}
             </Paper>
           </Grid>
 
-          {/* =================================================
-              AI PERFORMANCE
-          ================================================== */}
-
-          <Grid
-            item
-            xs={12}
-            lg={5}
-          >
+          <Grid item xs={12} lg={5}>
             <Paper
               elevation={0}
               sx={{
                 p: 4,
                 borderRadius: 4,
-                border: `1px solid ${
-                  theme.palette.divider
-                }`,
+                border: `1px solid ${theme.palette.divider}`,
                 height: "100%",
                 boxSizing: "border-box",
               }}
@@ -979,112 +688,72 @@ export default function Dashboard() {
               >
                 <InsightsIcon color="primary" />
 
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
+                <Typography variant="h6" fontWeight="bold">
                   AI Performance
                 </Typography>
               </Box>
 
-              {/* CONFIDENCE */}
+              <Typography color="text.secondary">
+                Average Confidence
+              </Typography>
 
-              <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="h3"
+                fontWeight="bold"
+                sx={{ mb: 2 }}
+              >
+                {statistics.totalPredictions > 0
+                  ? `${statistics.averageConfidence.toFixed(1)}%`
+                  : "--"}
+              </Typography>
+
+              <Box
+                sx={{
+                  height: 10,
+                  borderRadius: 10,
+                  bgcolor: "action.hover",
+                  overflow: "hidden",
+                  mb: 4,
+                }}
+              >
                 <Box
                   sx={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    mb: 1,
+                    height: "100%",
+                    width: `${Math.min(
+                      statistics.averageConfidence,
+                      100
+                    )}%`,
+                    background:
+                      "linear-gradient(90deg,#2563eb,#7c3aed)",
                   }}
-                >
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                  >
-                    Average Confidence
-                  </Typography>
-
-                  <Typography fontWeight="bold">
-                    {statistics.totalPredictions >
-                    0
-                      ? `${statistics.averageConfidence.toFixed(
-                          1
-                        )}%`
-                      : "--"}
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    height: 10,
-                    borderRadius: 10,
-                    bgcolor:
-                      theme.palette.action
-                        .hover,
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      height: "100%",
-                      width: `${Math.min(
-                        statistics.averageConfidence,
-                        100
-                      )}%`,
-                      borderRadius: 10,
-                      background:
-                        "linear-gradient(90deg,#2563eb,#7c3aed)",
-                      transition:
-                        "width .6s ease",
-                    }}
-                  />
-                </Box>
+                />
               </Box>
-
-              {/* TOTAL PREDICTIONS */}
 
               <Box
                 sx={{
                   p: 2,
                   borderRadius: 3,
-                  bgcolor:
-                    theme.palette.action
-                      .hover,
+                  bgcolor: "action.hover",
                   mb: 2,
                 }}
               >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography color="text.secondary">
                   Total AI Predictions
                 </Typography>
 
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  sx={{ mt: 0.5 }}
-                >
+                <Typography variant="h4" fontWeight="bold">
                   {statistics.totalPredictions}
                 </Typography>
               </Box>
 
-              {/* RECYCLABLE */}
-
               <Box
                 sx={{
                   p: 2,
                   borderRadius: 3,
-                  bgcolor:
-                    theme.palette.action
-                      .hover,
+                  bgcolor: "action.hover",
                 }}
               >
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                >
+                <Typography color="text.secondary">
                   Highly Recyclable Textiles
                 </Typography>
 
@@ -1092,7 +761,6 @@ export default function Dashboard() {
                   variant="h4"
                   fontWeight="bold"
                   color="success.main"
-                  sx={{ mt: 0.5 }}
                 >
                   {statistics.highlyRecyclable}
                 </Typography>
@@ -1101,31 +769,16 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* ===================================================
-            AI INSIGHTS + MODEL INFORMATION
-        ==================================================== */}
+        {/* AI INSIGHTS */}
 
-        <Grid
-          container
-          spacing={3}
-          sx={{ mt: 1 }}
-        >
-          {/* AI INSIGHTS */}
-
-          <Grid
-            item
-            xs={12}
-            lg={7}
-          >
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          <Grid item xs={12} lg={7}>
             <Paper
               elevation={0}
               sx={{
                 p: 4,
                 borderRadius: 4,
-                border: `1px solid ${
-                  theme.palette.divider
-                }`,
-                minHeight: 260,
+                border: `1px solid ${theme.palette.divider}`,
               }}
             >
               <Box
@@ -1136,91 +789,48 @@ export default function Dashboard() {
                   mb: 2,
                 }}
               >
-                <AutoAwesomeIcon
-                  color="primary"
-                />
+                <AutoAwesomeIcon color="primary" />
 
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
+                <Typography variant="h6" fontWeight="bold">
                   AI Insights
                 </Typography>
               </Box>
 
-              <Typography
-                color="text.secondary"
-              >
-                Most frequently detected
-                textile
+              <Typography color="text.secondary">
+                Most frequently detected textile
               </Typography>
 
               <Typography
                 variant="h2"
                 fontWeight="bold"
                 color="primary"
-                sx={{
-                  mt: 1,
-                  mb: 0.5,
-                  fontSize: {
-                    xs: "3rem",
-                    md: "4rem",
-                  },
-                }}
+                sx={{ mt: 1 }}
               >
                 {statistics.mostFrequentFabric}
               </Typography>
 
-              {statistics.mostFrequentCount >
-              0 ? (
-                <Typography
-                  color="text.secondary"
-                >
-                  Detected{" "}
-                  {statistics.mostFrequentCount}{" "}
-                  times
-                </Typography>
-              ) : (
-                <Typography
-                  color="text.secondary"
-                >
-                  Upload textile images to
-                  generate AI insights.
-                </Typography>
-              )}
+              <Typography color="text.secondary">
+                {statistics.mostFrequentCount > 0
+                  ? `Detected ${statistics.mostFrequentCount} times`
+                  : "Upload textile images to generate AI insights."}
+              </Typography>
 
               <Divider sx={{ my: 3 }} />
 
-              <Typography
-                color="text.secondary"
-                fontSize={14}
-                lineHeight={1.7}
-              >
-                The platform analyzes
-                uploaded textile images
-                using the trained
-                MobileNetV2-based AI
-                classification model.
+              <Typography color="text.secondary">
+                The platform analyzes uploaded textile images using the
+                trained MobileNetV2-based AI classification model.
               </Typography>
             </Paper>
           </Grid>
 
-          {/* MODEL INFORMATION */}
-
-          <Grid
-            item
-            xs={12}
-            lg={5}
-          >
+          <Grid item xs={12} lg={5}>
             <Paper
               elevation={0}
               sx={{
                 p: 4,
                 borderRadius: 4,
-                border: `1px solid ${
-                  theme.palette.divider
-                }`,
-                minHeight: 260,
+                border: `1px solid ${theme.palette.divider}`,
               }}
             >
               <Box
@@ -1231,27 +841,16 @@ export default function Dashboard() {
                   mb: 2,
                 }}
               >
-                <ScienceIcon
-                  color="primary"
-                />
+                <ScienceIcon color="primary" />
 
-                <Typography
-                  variant="h6"
-                  fontWeight="bold"
-                >
+                <Typography variant="h6" fontWeight="bold">
                   Textile AI Model
                 </Typography>
               </Box>
 
-              <Typography
-                color="text.secondary"
-                fontSize={14}
-                lineHeight={1.7}
-              >
-                MobileNetV2-based textile
-                classification model trained
-                to identify 10 fabric
-                categories.
+              <Typography color="text.secondary">
+                MobileNetV2-based textile classification model trained to
+                identify 10 fabric categories.
               </Typography>
 
               <Box
@@ -1286,9 +885,7 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* ===================================================
-            RECENT ANALYSES
-        ==================================================== */}
+        {/* RECENT ANALYSES */}
 
         <Paper
           elevation={0}
@@ -1297,27 +894,14 @@ export default function Dashboard() {
             borderRadius: 4,
             border: `1px solid ${theme.palette.divider}`,
             overflow: "hidden",
-            bgcolor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
           }}
         >
-          {/* TABLE HEADER */}
-
           <Box
             sx={{
               p: 3,
               display: "flex",
-              justifyContent:
-                "space-between",
-              alignItems: {
-                xs: "flex-start",
-                sm: "center",
-              },
-              flexDirection: {
-                xs: "column",
-                sm: "row",
-              },
-              gap: 2,
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
             <Box
@@ -1329,325 +913,157 @@ export default function Dashboard() {
             >
               <HistoryIcon />
 
-              <Typography
-                variant="h6"
-                fontWeight="bold"
-              >
+              <Typography variant="h6" fontWeight="bold">
                 Recent Analyses
               </Typography>
             </Box>
 
             <Button
-              endIcon={
-                <ArrowForwardIcon />
-              }
-              onClick={() =>
-                navigate("/history")
-              }
-              sx={{
-                textTransform: "none",
-                fontWeight: "bold",
-              }}
+              endIcon={<ArrowForwardIcon />}
+              onClick={() => navigate("/history")}
+              sx={{ textTransform: "none" }}
             >
               View All History
             </Button>
           </Box>
 
-          <Divider sx={{ borderColor: theme.palette.divider }} />
-
-          {/* NO DATA */}
+          <Divider />
 
           {recentAnalyses.length === 0 ? (
-            <Box
-              sx={{
-                p: 5,
-                textAlign: "center",
-              }}
-            >
-              <Typography
-                color="text.secondary"
-              >
+            <Box sx={{ p: 5, textAlign: "center" }}>
+              <Typography color="text.secondary">
                 No textile analyses yet.
               </Typography>
 
               <Button
                 variant="contained"
-                sx={{
-                  mt: 2,
-                  textTransform: "none",
-                  borderRadius: 2,
-                }}
-                onClick={() =>
-                  navigate("/upload")
-                }
+                sx={{ mt: 2 }}
+                onClick={() => navigate("/upload")}
               >
                 Analyze Your First Textile
               </Button>
             </Box>
           ) : (
-            <TableContainer
-              sx={{
-                overflowX: "auto",
-              }}
-            >
-              <Table
-                sx={{
-                  bgcolor: theme.palette.background.paper,
-                  "& .MuiTableCell-root": {
-                    color: theme.palette.text.primary,
-                    borderColor: theme.palette.divider,
-                  },
-                  "& .MuiTableHead-root .MuiTableCell-root": {
-                    bgcolor:
-                      theme.palette.mode === "dark"
-                        ? theme.palette.background.default
-                        : theme.palette.grey[50],
-                    color: theme.palette.text.primary,
-                    fontWeight: 700,
-                  },
-                }}
-              >
+            <TableContainer>
+              <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>
-                      <Typography
-                        component="span"
-                        fontWeight="bold"
-                        color="text.primary"
-                      >
-                        Textile
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography
-                        component="span"
-                        fontWeight="bold"
-                        color="text.primary"
-                      >
-                        Prediction
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography
-                        component="span"
-                        fontWeight="bold"
-                        color="text.primary"
-                      >
-                        Confidence
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography
-                        component="span"
-                        fontWeight="bold"
-                        color="text.primary"
-                      >
-                        Recyclability
-                      </Typography>
-                    </TableCell>
-
-                    <TableCell>
-                      <Typography
-                        component="span"
-                        fontWeight="bold"
-                        color="text.primary"
-                      >
-                        Date
-                      </Typography>
-                    </TableCell>
+                    <TableCell>Textile</TableCell>
+                    <TableCell>Prediction</TableCell>
+                    <TableCell>Confidence</TableCell>
+                    <TableCell>Recyclability</TableCell>
+                    <TableCell>Date</TableCell>
                   </TableRow>
                 </TableHead>
 
                 <TableBody>
-                  {recentAnalyses.map(
-                    (item) => (
-                      <TableRow
-                        key={item.id}
-                        hover
-                        sx={{
-                          cursor: "pointer",
-                          bgcolor: theme.palette.background.paper,
-                          "&:hover": {
-                            bgcolor: theme.palette.action.hover,
-                          },
-                          "& .MuiTableCell-root": {
-                            color: theme.palette.text.primary,
-                            borderColor: theme.palette.divider,
-                          },
-                        }}
-                        onClick={() =>
-                          navigate(
-                            `/history/${item.id}`
-                          )
-                        }
-                      >
-                        {/* TEXTILE */}
-
-                        <TableCell>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems:
-                                "center",
-                              gap: 2,
-                            }}
+                  {recentAnalyses.map((item) => (
+                    <TableRow
+                      key={item.id}
+                      hover
+                      sx={{ cursor: "pointer" }}
+                      onClick={() =>
+                        navigate(`/history/${item.id}`)
+                      }
+                    >
+                      <TableCell>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                          }}
+                        >
+                          <Avatar
+                            src={
+                              item.image_path
+                                ? `${api.defaults.baseURL}/${item.image_path.replace(
+                                    /\\/g,
+                                    "/"
+                                  )}`
+                                : undefined
+                            }
+                            variant="rounded"
                           >
-                            {item.image_path ? (
-                              <Avatar
-                                src={`${api.defaults.baseURL}/${item.image_path.replace(
-                                  /\\/g,
-                                  "/"
-                                )}`}
-                                variant="rounded"
-                                sx={{
-                                  width: 42,
-                                  height: 42,
-                                  bgcolor: theme.palette.action.hover,
-                                }}
-                              />
-                            ) : (
-                              <Avatar
-                                variant="rounded"
-                                sx={{
-                                  width: 42,
-                                  height: 42,
-                                }}
-                              >
-                                🧵
-                              </Avatar>
-                            )}
+                            🧵
+                          </Avatar>
 
-                            <Typography
-                              fontWeight="medium"
-                            >
-                              {item.textile_name ||
-                                "Unnamed Textile"}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-
-                        {/* PREDICTION */}
-
-                        <TableCell>
-                          <Typography
-                            fontWeight="bold"
-                            color="primary"
-                          >
-                            {item.prediction ||
-                              "Pending"}
+                          <Typography>
+                            {item.textile_name ||
+                              "Unnamed Textile"}
                           </Typography>
-                        </TableCell>
+                        </Box>
+                      </TableCell>
 
-                        {/* CONFIDENCE */}
+                      <TableCell>
+                        <Typography
+                          fontWeight="bold"
+                          color="primary"
+                        >
+                          {item.prediction || "Pending"}
+                        </Typography>
+                      </TableCell>
 
-                        <TableCell>
-                          {item.confidence ? (
-                            <Chip
-                              label={`${parseFloat(
-                                item.confidence
-                              ).toFixed(
-                                1
-                              )}%`}
-                              color={getConfidenceColor(
-                                item.confidence
-                              )}
-                              size="small"
-                              sx={{
-                                fontWeight: 700,
-                                ...(theme.palette.mode === "dark" && {
-                                  "& .MuiChip-label": {
-                                    color: "inherit",
-                                  },
-                                }),
-                              }}
-                            />
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-
-                        {/* RECYCLABILITY */}
-
-                        <TableCell>
-                          {item.recyclable ? (
-                            <Chip
-                              icon={
-                                <CheckCircleIcon />
-                              }
-                              label={
-                                item.recyclable
-                              }
-                              color={getRecycleColor(
-                                item.recyclable
-                              )}
-                              size="small"
-                              sx={{
-                                fontWeight: 700,
-                                ...(theme.palette.mode === "dark" && {
-                                  "& .MuiChip-label": {
-                                    color: "inherit",
-                                  },
-                                }),
-                              }}
-                            />
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-
-                        {/* DATE */}
-
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                          >
-                            {formatDate(
-                              item.uploaded_at
+                      <TableCell>
+                        {item.confidence ? (
+                          <Chip
+                            label={`${parseFloat(
+                              item.confidence
+                            ).toFixed(1)}%`}
+                            color={getConfidenceColor(
+                              item.confidence
                             )}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  )}
+                            size="small"
+                          />
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        {item.recyclable ? (
+                          <Chip
+                            icon={<CheckCircleIcon />}
+                            label={item.recyclable}
+                            color={getRecycleColor(
+                              item.recyclable
+                            )}
+                            size="small"
+                          />
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+
+                      <TableCell>
+                        {formatDate(item.uploaded_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </TableContainer>
           )}
         </Paper>
 
-        {/* ===================================================
-            FOOTER STATUS
-        ==================================================== */}
+        {/* FOOTER */}
 
         <Box
           sx={{
             display: "flex",
-            justifyContent:
-              "center",
+            justifyContent: "center",
             alignItems: "center",
             gap: 1,
             mt: 4,
-            mb: 2,
+            pb: 2,
           }}
         >
-          <CheckCircleIcon
-            color="success"
-            sx={{ fontSize: 18 }}
-          />
+          <CheckCircleIcon color="success" />
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            AI Classification System
-            Active
+          <Typography color="text.secondary">
+            AI Classification System Active
           </Typography>
         </Box>
       </Box>
-    </Box>
   );
 }

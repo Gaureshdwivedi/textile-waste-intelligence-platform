@@ -10,6 +10,10 @@ import {
   Divider,
 } from "@mui/material";
 
+import {
+  DRAWER_WIDTH,
+  NAVBAR_HEIGHT,
+} from "./layoutConfig";
 import { useEffect, useState } from "react";
 import api from "../services/api";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -20,8 +24,9 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import RecyclingIcon from "@mui/icons-material/Recycling";
 import { useTheme } from "@mui/material/styles";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import AnalyticsIcon from "@mui/icons-material/Analytics";
 
-const drawerWidth = 260;
+const navbarHeight = 64;
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,6 +37,7 @@ export default function Sidebar() {
     { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
     { text: "Upload", icon: <CloudUploadIcon />, path: "/upload" },
     { text: "History", icon: <HistoryIcon />, path: "/history" },
+    { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
   ];
 
@@ -66,42 +72,26 @@ const fetchUser = async () => {
     <Drawer
       variant="permanent"
       sx={{
-        width: drawerWidth,
+        width: DRAWER_WIDTH,
+        flexShrink:0,
         "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            mt: "64px",
-            height: "calc(100vh - 64px)",
+            width: DRAWER_WIDTH,
+            top: `${NAVBAR_HEIGHT}px`,
+            height: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
+            boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
-            overflowY: "auto",
+            
             background: theme.palette.background.paper,
             color: theme.palette.text.primary,
             borderRight: "1px solid",
             borderColor: "divider",
+            overflow: "hidden",
           },
       }}
     >
-      <Box sx={{ p: 3 }}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Avatar sx={{ bgcolor: "#22c55e" }}>
-            <RecyclingIcon />
-          </Avatar>
 
-          <Box>
-            <Typography fontWeight="bold" fontSize={24}>
-              TextileAI
-            </Typography>
-
-            <Typography variant="body2" color="text.secondary">
-              AI Waste Intelligence Platform
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-
-      <Divider />
-
-      <List sx={{ mt: 2 }}>
+      <List sx={{ mt: 2}}>
         {menuItems.map((item) => (
           <ListItemButton
             key={item.text}
