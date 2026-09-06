@@ -33,10 +33,30 @@ import {
 import api from "../services/api";
 
 
+// ==========================================================
+// ROLE DISPLAY LABELS
+// ==========================================================
+
+const ROLE_LABELS = {
+  recycling_operator: "Recycling Operator",
+  sustainability_manager: "Sustainability Manager",
+  manufacturer: "Manufacturer",
+  admin: "Administrator",
+};
+
+
 export default function Navbar() {
 
   const { toggleColorMode, mode } =
     useContext(ColorModeContext);
+
+
+  // ==========================================================
+  // CURRENT USER STATE
+  // ==========================================================
+
+  const [currentUser, setCurrentUser] =
+    useState(null);
 
 
   // ==========================================================
@@ -55,6 +75,45 @@ export default function Navbar() {
 
   const notificationOpen =
     Boolean(anchorEl);
+
+
+  // ==========================================================
+  // LOAD CURRENT USER
+  // ==========================================================
+
+  const loadCurrentUser = async () => {
+
+    try {
+
+      const token =
+        localStorage.getItem(
+          "access_token"
+        );
+
+      const response = await api.get(
+        "/users/me",
+        {
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      setCurrentUser(
+        response.data
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load current user:",
+        error
+      );
+
+    }
+
+  };
 
 
   // ==========================================================
@@ -103,10 +162,12 @@ export default function Navbar() {
 
 
   // ==========================================================
-  // LOAD NOTIFICATIONS ON START
+  // LOAD USER + NOTIFICATIONS ON START
   // ==========================================================
 
   useEffect(() => {
+
+    loadCurrentUser();
 
     loadNotifications();
 
@@ -886,7 +947,11 @@ export default function Navbar() {
               height: 48,
             }}
           >
-            G
+            {
+              currentUser?.full_name
+                ?.[0]
+                ?.toUpperCase() || "?"
+            }
           </Avatar>
 
 
@@ -895,7 +960,10 @@ export default function Navbar() {
             <Typography
               fontWeight="medium"
             >
-              Gauresh Dwivedi
+              {
+                currentUser?.full_name ||
+                "Loading..."
+              }
             </Typography>
 
 
@@ -903,7 +971,12 @@ export default function Navbar() {
               variant="body2"
               color="text.secondary"
             >
-              User
+              {
+                currentUser
+                  ? (ROLE_LABELS[currentUser.role] ||
+                     currentUser.role)
+                  : ""
+              }
             </Typography>
 
           </Box>

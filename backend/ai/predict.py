@@ -1,9 +1,12 @@
 import json
-from pathlib import Path
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.utils import load_img, img_to_array
+
+from tensorflow.keras.utils import (
+    load_img,
+    img_to_array,
+)
 
 from ai.config import (
     MODELS_DIR,
@@ -17,10 +20,7 @@ from ai.config import (
 # MODEL PATH
 # ==========================================================
 
-MODEL_PATH = (
-    Path(MODELS_DIR)
-    / "textile_model_v6_best.keras"
-)
+MODEL_PATH = MODELS_DIR / "textile_model_v6_best.keras"
 
 
 # ==========================================================
@@ -28,25 +28,44 @@ MODEL_PATH = (
 # ==========================================================
 
 print("\nLoading Textile AI V6 model...")
-print(f"Model: {MODEL_PATH}")
+
+print(f"Model path: {MODEL_PATH}")
 
 if not MODEL_PATH.exists():
+
     raise FileNotFoundError(
-        f"V4 model not found:\n{MODEL_PATH}"
+        f"Model not found:\n{MODEL_PATH}"
     )
+
 
 model = tf.keras.models.load_model(
     MODEL_PATH
 )
 
-print("Textile AI V6 model loaded successfully!")
+
+print(
+    "Textile AI V6 model loaded successfully!"
+)
 
 
 # ==========================================================
 # LOAD CLASS LABELS
 # ==========================================================
 
-with open(LABELS_PATH, "r") as f:
+print(f"Labels path: {LABELS_PATH}")
+
+if not LABELS_PATH.exists():
+
+    raise FileNotFoundError(
+        f"Labels file not found:\n{LABELS_PATH}"
+    )
+
+
+with open(
+    LABELS_PATH,
+    "r",
+) as f:
+
     CLASS_NAMES = json.load(f)
 
 
@@ -54,14 +73,35 @@ with open(LABELS_PATH, "r") as f:
 # LOAD FABRIC INFORMATION
 # ==========================================================
 
-if Path(FABRIC_INFO_PATH).exists():
+print(
+    f"Fabric info path: {FABRIC_INFO_PATH}"
+)
 
-    with open(FABRIC_INFO_PATH, "r") as f:
-        FABRIC_INFO = json.load(f)
 
-else:
+if not FABRIC_INFO_PATH.exists():
 
-    FABRIC_INFO = {}
+    raise FileNotFoundError(
+        f"Fabric information file not found:\n"
+        f"{FABRIC_INFO_PATH}"
+    )
+
+
+with open(
+    FABRIC_INFO_PATH,
+    "r",
+) as f:
+
+    FABRIC_INFO = json.load(f)
+
+
+print(
+    "Fabric information loaded successfully!"
+)
+
+print(
+    "Available fabrics:",
+    list(FABRIC_INFO.keys())
+)
 
 
 # ==========================================================
@@ -151,7 +191,26 @@ def predict_image(image_path):
         fabric,
         {}
     )
+    print("\n========== FABRIC INFORMATION ==========")
 
+    print(
+        "Predicted fabric:",
+         repr(fabric)
+    )
+
+    print(
+        "Fabric data:",
+         fabric_data
+    )
+
+    print(
+        "Available fabrics:",
+        list(FABRIC_INFO.keys())
+    )
+
+    print(
+        "========================================\n"
+    )
 
     category = fabric_data.get(
         "category",

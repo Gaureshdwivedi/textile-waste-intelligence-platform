@@ -33,7 +33,8 @@ def get_profile(
         "message": "Authenticated successfully",
         "id": current_user.id,
         "full_name": current_user.full_name,
-        "email": current_user.email
+        "email": current_user.email,
+        "role": current_user.role,
     }
 
 

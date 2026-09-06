@@ -4,7 +4,6 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.database import Base, engine
-
 # ==========================================================
 # MODELS
 # Import all models BEFORE create_all()
@@ -13,7 +12,7 @@ from app.database import Base, engine
 from app.models.user import User
 from app.models.textile import Textile
 from app.models.notification import Notification
-
+from app.routers.dashboard import router as dashboard_router
 # ==========================================================
 # ROUTERS
 # ==========================================================
@@ -92,3 +91,4 @@ app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(textile_router)
 app.include_router(notification_router)
+app.include_router(dashboard_router)

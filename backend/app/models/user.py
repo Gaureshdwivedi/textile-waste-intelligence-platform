@@ -20,3 +20,21 @@ class User(Base):
         String(255),
         nullable=False
     )
+
+    # ==========================================================
+    # ROLE-BASED ACCESS (Module 1 requirement)
+    # ==========================================================
+
+    role = Column(
+        String(50),
+        nullable=False,
+        default="recycling_operator",
+        server_default="recycling_operator",
+    )
+    # New — links a Google account; null for email/password users
+    google_id = Column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
+    )

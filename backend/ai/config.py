@@ -1,25 +1,41 @@
 from pathlib import Path
 
-# ==========================================================
-# Project Paths
-# ==========================================================
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-DATASET_PATH = PROJECT_ROOT / "datasets"
-
-MODELS_DIR = PROJECT_ROOT / "backend" / "ai" / "models"
-
-GRAPHS_DIR = PROJECT_ROOT / "backend" / "ai" / "graphs"
-
-LOGS_DIR = PROJECT_ROOT / "backend" / "ai" / "logs"
-
-LABELS_PATH = PROJECT_ROOT / "backend" / "ai" / "labels.json"
-
-FABRIC_INFO_PATH = PROJECT_ROOT / "backend" / "ai" / "fabric_info.json"
 
 # ==========================================================
-# Training Parameters
+# AI DIRECTORY
+# ==========================================================
+
+AI_DIR = Path(__file__).resolve().parent
+
+
+# ==========================================================
+# BACKEND DIRECTORY
+# ==========================================================
+
+BACKEND_DIR = AI_DIR.parent
+
+
+# ==========================================================
+# PROJECT PATHS
+# ==========================================================
+
+MODELS_DIR = AI_DIR / "models"
+
+GRAPHS_DIR = AI_DIR / "graphs"
+
+LOGS_DIR = AI_DIR / "logs"
+
+LABELS_PATH = AI_DIR / "labels.json"
+
+FABRIC_INFO_PATH = AI_DIR / "fabric_info.json"
+
+
+# Dataset path
+DATASET_PATH = BACKEND_DIR.parent / "datasets"
+
+
+# ==========================================================
+# TRAINING PARAMETERS
 # ==========================================================
 
 IMAGE_SIZE = (224, 224)
@@ -34,19 +50,31 @@ VALIDATION_SPLIT = 0.20
 
 SEED = 42
 
+
 # ==========================================================
-# Selected Classes
+# SELECTED CLASSES
 # ==========================================================
 
 CLASSES = [
+
     "Corduroy",
+
     "Cotton",
+
     "Denim",
+
     "Fleece",
+
     "Leather",
+
     "Linen",
+
     "Nylon",
+
     "Polyester",
+
     "Silk",
+
     "Velvet",
+
 ]

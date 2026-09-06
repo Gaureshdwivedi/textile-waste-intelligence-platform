@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 
 import AppLayout from "./components/AppLayout";
-
+import Reports from "./pages/Reports";
 import Profile from "./pages/Profile";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -10,12 +10,22 @@ import Upload from "./pages/Upload";
 import History from "./pages/History";
 import HistoryDetails from "./pages/HistoryDetails";
 import Analytics from "./pages/Analytics";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
     <Routes>
       {/* Pages WITHOUT Sidebar/Navbar */}
       <Route path="/" element={<Login />} />
+
+      <Route
+        path="/admin-dashboard"
+        element={
+          <AppLayout>
+            <AdminDashboard />
+          </AppLayout>
+        }
+      />
 
       <Route
         path="/register"
@@ -65,6 +75,15 @@ function App() {
         element={
           <AppLayout>
             <HistoryDetails />
+          </AppLayout>
+        }
+      />
+
+      <Route
+        path="/reports"
+        element={
+          <AppLayout>
+            <Reports />
           </AppLayout>
         }
       />

@@ -235,10 +235,11 @@ export default function History() {
       return path;
     }
 
-    return `http://127.0.0.1:8000/${path.replace(
-      /^\/+/,
-      ""
-    )}`;
+    const cleanPath = path
+      .replace(/\\/g, "/")
+      .replace(/^\/+/, "");
+
+    return `${api.defaults.baseURL}/${cleanPath}`;
   };
 
   // ==========================================================
@@ -681,7 +682,7 @@ export default function History() {
                                 item.image_path
                               )}
                               alt={
-                                item.textile_name ||
+                                item.textile_name || item.prediction ||
                                 "Textile"
                               }
                               style={{
@@ -691,6 +692,7 @@ export default function History() {
                                   "100%",
                                 objectFit:
                                   "cover",
+                                display: "block",  
                               }}
                             />
 

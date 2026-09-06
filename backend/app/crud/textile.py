@@ -201,3 +201,15 @@ def delete_textile(
     db.delete(textile)
 
     db.commit()
+
+# ==========================================================
+# GET ALL TEXTILES (ADMIN ONLY)
+# ==========================================================
+
+def get_all_textiles(db: Session):
+
+    return (
+        db.query(Textile)
+        .order_by(Textile.uploaded_at.desc())
+        .all()
+    )

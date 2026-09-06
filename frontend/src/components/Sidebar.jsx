@@ -25,6 +25,7 @@ import RecyclingIcon from "@mui/icons-material/Recycling";
 import { useTheme } from "@mui/material/styles";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
+import DescriptionIcon from "@mui/icons-material/Description";
 
 const navbarHeight = 64;
 export default function Sidebar() {
@@ -38,6 +39,7 @@ export default function Sidebar() {
     { text: "Upload", icon: <CloudUploadIcon />, path: "/upload" },
     { text: "History", icon: <HistoryIcon />, path: "/history" },
     { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
+    { text: "Reports", icon: <DescriptionIcon />, path: "/reports"},
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
   ];
 

@@ -3,9 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import api from "../services/api";
 
-import Navbar from "../components/Navbar";
-import Sidebar from "../components/Sidebar";
-
 import {
   Box,
   Card,
@@ -195,20 +192,9 @@ export default function HistoryDetails() {
 
   if (loading) {
     return (
-      <>
-        <Navbar />
-
-        <Box sx={{ display: "flex" }}>
-          <Sidebar />
-
-          <Box
+        <Box
             sx={{
-              flexGrow: 1,
-              ml: {
-                xs: 0,
-                md: "290px",
-              },
-              pt: "105px",
+              width: "100p%",
               minHeight: "100vh",
               display: "flex",
               justifyContent: "center",
@@ -217,9 +203,7 @@ export default function HistoryDetails() {
             }}
           >
             <CircularProgress />
-          </Box>
-        </Box>
-      </>
+            </Box>
     );
   }
 
@@ -229,22 +213,14 @@ export default function HistoryDetails() {
 
   if (!item) {
     return (
-      <>
-        <Navbar />
-
-        <Box sx={{ display: "flex" }}>
-          <Sidebar />
-
           <Box
             sx={{
-              flexGrow: 1,
-              ml: {
-                xs: 0,
-                md: "290px",
-              },
-              pt: "120px",
-              p: 5,
+              width: "100%",
               minHeight: "100vh",
+              p: {
+                xs: 2,
+                md: 4,
+              },
               background: colors.pageBackground,
             }}
           >
@@ -284,8 +260,6 @@ export default function HistoryDetails() {
               </Typography>
             </Paper>
           </Box>
-        </Box>
-      </>
     );
   }
 
@@ -341,35 +315,31 @@ export default function HistoryDetails() {
   // =====================================================
 
   return (
-    <>
-      <Navbar />
-
-      <Box sx={{ display: "flex" }}>
-        <Sidebar />
-
-        <Box
-          sx={{
-            flexGrow: 1,
-            ml: {
-              xs: 0,
-              md: "290px",
-            },
-            pt: "105px",
-            px: {
-              xs: 2,
-              md: 5,
-            },
-            pb: 6,
-            minHeight: "100vh",
-            background: colors.pageBackground,
-          }}
-        >
-          <Box
-            sx={{
-              maxWidth: 1250,
-              mx: "auto",
-            }}
-          >
+    <Box
+      sx={{
+        flex: 1,
+        width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
+        minHeight: "100vh",
+        px: {
+          xs: 2,
+          md: 4,
+        },
+        py: 3,
+        boxSizing: "border-box",
+        background: colors.pageBackground,
+        overflowX: "hidden",
+      }}
+    >
+      <Box
+        sx={{
+          width: "100%",
+          minWidth:0,
+          maxWidth: "100",
+          margin: 0,
+        }}
+      >
             {/* =================================================
                 BACK BUTTON
             ================================================= */}
@@ -420,6 +390,9 @@ export default function HistoryDetails() {
             <Card
               elevation={0}
               sx={{
+                 width: "100%",
+                 maxWidth: "100%",
+                 boxSizing: "border-box",
                 borderRadius: 5,
                 overflow: "hidden",
                 border: `1px solid ${colors.border}`,
@@ -1523,7 +1496,5 @@ export default function HistoryDetails() {
             </Box>
           </Box>
         </Box>
-      </Box>
-    </>
   );
 }
