@@ -31,8 +31,7 @@ class UserResponse(BaseModel):
 
 class Token(BaseModel):
     access_token: str
-    token_type: str
-    
+    token_type: str   
 class GoogleAuthRequest(BaseModel):
     credential: str
-    role: Role = "recycling_operator"    
+    role: Role = "recycling_operator"

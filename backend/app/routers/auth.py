@@ -119,4 +119,4 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     return {
         "access_token": access_token,
         "token_type": "bearer",
-    }    
+    }  

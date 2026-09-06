@@ -692,7 +692,7 @@ export default function History() {
                                   "100%",
                                 objectFit:
                                   "cover",
-                                display: "block",  
+                                display: "block",
                               }}
                             />
 
