@@ -9,6 +9,7 @@ import App from "./App";
 import "./index.css";
 import ThemeContextProvider
 from "./theme/ColorModeContext";
+import { AvatarProvider } from "./context/AvatarContext";
 
 ReactDOM.createRoot(
   document.getElementById("root")
@@ -20,7 +21,11 @@ ReactDOM.createRoot(
 
       <ThemeContextProvider>
 
-        <App />
+        <AvatarProvider>
+
+          <App />
+
+        </AvatarProvider>
 
       </ThemeContextProvider>
 

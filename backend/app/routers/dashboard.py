@@ -112,3 +112,53 @@ def list_users(
             for u in users
         ],
     }
+    
+from app.crud.user import get_user_by_id, update_user_role
+from pydantic import BaseModel
+
+class RoleUpdate(BaseModel):
+    role: str
+
+@router.put("/admin/users/{user_id}/role")
+def update_user_role_route(
+    user_id: int,
+    data: RoleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role("admin")),
+):
+    allowed_roles = [
+        "recycling_operator",
+        "sustainability_manager",
+        "manufacturer",
+        "admin",
+    ]
+
+    if data.role not in allowed_roles:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid role. Must be one of: {allowed_roles}",
+        )
+
+    user = get_user_by_id(db, user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.id == current_user.id:
+        raise HTTPException(
+            status_code=400,
+            detail="You cannot change your own role.",
+        )
+
+    updated = update_user_role(db, user, data.role)
+
+    return {
+        "success": True,
+        "message": f"Role updated to {updated.role}",
+        "data": {
+            "id": updated.id,
+            "full_name": updated.full_name,
+            "email": updated.email,
+            "role": updated.role,
+        },
+    }    

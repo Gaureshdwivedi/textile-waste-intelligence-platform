@@ -14,14 +14,14 @@ import {
 import RecyclingIcon from "@mui/icons-material/Recycling";
 import InsightsIcon from "@mui/icons-material/Insights";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 
 import api from "../services/api";
 import AuthLayout, { authColors } from "../components/AuthLayout";
 
 // ==========================================================
-// ROLE OPTIONS — this is what actually answers
-// "what does each role mean" for a new signer-upper
+// ROLE OPTIONS
+// Admin is intentionally excluded — admins are created
+// directly in the DB or promoted by an existing admin.
 // ==========================================================
 
 const ROLE_OPTIONS = [
@@ -43,21 +43,25 @@ const ROLE_OPTIONS = [
     description: "Monitor production waste and recovery.",
     icon: PrecisionManufacturingIcon,
   },
-  {
-    value: "admin",
-    label: "Administrator",
-    description: "Oversee the platform and all users.",
-    icon: AdminPanelSettingsIcon,
-  },
 ];
 
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: 1.5,
-    bgcolor: "rgba(0,0,0,0.02)",
+    bgcolor: "#ffffff",
+    color: authColors.ink,
+  },
+  "& .MuiOutlinedInput-input": {
+    color: authColors.ink,
+  },
+  "& .MuiInputLabel-root": {
+    color: authColors.thread,
+  },
+  "& .MuiInputLabel-root.Mui-focused": {
+    color: authColors.rust,
   },
   "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: "rgba(0,0,0,0.12)",
+    borderColor: "rgba(0,0,0,0.18)",
   },
   "&:hover .MuiOutlinedInput-notchedOutline": {
     borderColor: authColors.thread,

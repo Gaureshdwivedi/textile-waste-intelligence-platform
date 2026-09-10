@@ -20,10 +20,20 @@ import AuthLayout, { authColors } from "../components/AuthLayout";
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
     borderRadius: 1.5,
-    bgcolor: "rgba(0,0,0,0.02)",
+    bgcolor: "#ffffff",
+    color: authColors.ink,
+  },
+  "& .MuiOutlinedInput-input": {
+    color: authColors.ink,
+  },
+  "& .MuiInputLabel-root": {
+    color: authColors.thread,
+  },
+  "& .MuiInputLabel-root.Mui-focused": {
+    color: authColors.rust,
   },
   "& .MuiOutlinedInput-notchedOutline": {
-    borderColor: "rgba(0,0,0,0.12)",
+    borderColor: "rgba(0,0,0,0.18)",
   },
   "&:hover .MuiOutlinedInput-notchedOutline": {
     borderColor: authColors.thread,

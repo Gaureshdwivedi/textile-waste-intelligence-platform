@@ -152,7 +152,19 @@ export default function Upload() {
         "UPLOAD RESPONSE:",
         response.data
       );
+      
+      if (response.data?.success === false) {
+        setAnalysis(null);
 
+        setMessage(
+          `⚠️ ${
+            response.data?.message ||
+            "The image could not be confidently identified as a textile."
+          }`
+        );
+
+        return;
+      }
       const aiResult =
         response.data?.ai_analysis;
 

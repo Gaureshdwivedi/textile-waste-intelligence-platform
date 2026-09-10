@@ -24,6 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 
 import { ColorModeContext } from "../theme/ColorModeContext";
+import { useAvatar } from "../context/AvatarContext";
 
 import {
   DRAWER_WIDTH,
@@ -49,6 +50,8 @@ export default function Navbar() {
 
   const { toggleColorMode, mode } =
     useContext(ColorModeContext);
+
+  const { avatarUrl, setUserId } = useAvatar();
 
 
   // ==========================================================
@@ -103,6 +106,8 @@ export default function Navbar() {
       setCurrentUser(
         response.data
       );
+
+      setUserId(response.data.id);
 
     } catch (error) {
 
@@ -938,6 +943,7 @@ export default function Navbar() {
           ================================================== */}
 
           <Avatar
+            src={avatarUrl || undefined}
             sx={{
               bgcolor:
                 "#166534",
@@ -948,9 +954,10 @@ export default function Navbar() {
             }}
           >
             {
-              currentUser?.full_name
+              !avatarUrl &&
+              (currentUser?.full_name
                 ?.[0]
-                ?.toUpperCase() || "?"
+                ?.toUpperCase() || "?")
             }
           </Avatar>
 

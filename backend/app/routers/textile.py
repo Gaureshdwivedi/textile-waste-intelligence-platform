@@ -229,7 +229,38 @@ async def upload_textile(
         "top_predictions",
         []
     )
+        # ======================================================
+    # CONFIDENCE THRESHOLD GUARDRAIL
+    # Rejects results where the model isn't confident enough
+    # to be a textile at all (e.g. non-fabric photos).
+    # ======================================================
 
+    CONFIDENCE_THRESHOLD = 50.0  # percent
+
+    try:
+        confidence_value = float(confidence) if confidence is not None else 0.0
+    except (TypeError, ValueError):
+        confidence_value = 0.0
+
+    if confidence_value < CONFIDENCE_THRESHOLD:
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        return {
+            "success": False,
+            "low_confidence": True,
+            "message": (
+                "Unable to confidently classify this image as a textile. "
+                "Please upload a clear, well-lit photo of the fabric, "
+                "filling most of the frame."
+            ),
+            "ai_analysis": {
+                "fabric": prediction,
+                "confidence": confidence_value,
+                "top_predictions": top_predictions,
+            },
+        }
     print(
         "\nExtracted AI Information:"
     )
