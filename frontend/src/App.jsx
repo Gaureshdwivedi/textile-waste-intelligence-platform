@@ -11,6 +11,7 @@ import History from "./pages/History";
 import HistoryDetails from "./pages/HistoryDetails";
 import Analytics from "./pages/Analytics";
 import AdminDashboard from "./pages/AdminDashboard";
+import RecyclingOperatorDashboard from "./pages/RecyclingOperatorDashboard";
 
 function App() {
   return (
@@ -93,6 +94,15 @@ function App() {
         element={
           <AppLayout>
             <Profile />
+          </AppLayout>
+        }
+      />
+
+      <Route
+        path="/recycling-dashboard"
+        element={
+          <AppLayout>
+          <RecyclingOperatorDashboard />
           </AppLayout>
         }
       />

@@ -71,6 +71,24 @@ const fieldSx = {
   },
 };
 
+// ==========================================================
+// ROLE -> HOME ROUTE
+// ==========================================================
+
+function getHomeRouteForRole(role) {
+  switch (role) {
+    case "admin":
+      return "/admin-dashboard";
+    case "recycling_operator":
+      return "/recycling-dashboard";
+    case "sustainability_manager":
+    case "manufacturer":
+      return "/analytics";
+    default:
+      return "/dashboard";
+  }
+}
+
 export default function Register() {
   const navigate = useNavigate();
 
@@ -107,7 +125,7 @@ export default function Register() {
 
       const userRole = userResponse.data.role;
 
-      navigate(userRole === "admin" ? "/admin-dashboard" : "/dashboard");
+      navigate(getHomeRouteForRole(userRole));
     } catch (err) {
       console.error(err);
       setError("Google sign-up failed. Please try again.");

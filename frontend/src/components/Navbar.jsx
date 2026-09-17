@@ -39,6 +39,7 @@ import api from "../services/api";
 // ==========================================================
 
 const ROLE_LABELS = {
+  user:"User",
   recycling_operator: "Recycling Operator",
   sustainability_manager: "Sustainability Manager",
   manufacturer: "Manufacturer",

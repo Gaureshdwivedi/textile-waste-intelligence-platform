@@ -22,24 +22,49 @@ import HistoryIcon from "@mui/icons-material/History";
 import PersonIcon from "@mui/icons-material/Person";
 import LogoutIcon from "@mui/icons-material/Logout";
 import RecyclingIcon from "@mui/icons-material/Recycling";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import { useTheme } from "@mui/material/styles";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import DescriptionIcon from "@mui/icons-material/Description";
 
 const navbarHeight = 64;
+
+// ==========================================================
+// ROLE-AWARE "DASHBOARD" LINK
+//
+// Each role has its own home page (built in earlier steps).
+// This decides what the first sidebar item points to.
+// ==========================================================
+
+function getDashboardItemForRole(role) {
+  switch (role) {
+    case "admin":
+      return { text: "Admin Dashboard", icon: <AdminPanelSettingsIcon />, path: "/admin-dashboard" };
+    case "recycling_operator":
+      return { text: "Dashboard", icon: <RecyclingIcon />, path: "/recycling-dashboard" };
+    case "sustainability_manager":
+    case "manufacturer":
+      return { text: "Dashboard", icon: <AnalyticsIcon />, path: "/analytics" };
+    default:
+      return { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" };
+  }
+}
+
 export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const theme = useTheme();
   const [user, setUser] = useState(null);
 
+  const dashboardItem = getDashboardItemForRole(user?.role);
+
   const menuItems = [
-    { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+    dashboardItem,
     { text: "Upload", icon: <CloudUploadIcon />, path: "/upload" },
     { text: "History", icon: <HistoryIcon />, path: "/history" },
     { text: "Analytics", icon: <AnalyticsIcon />, path: "/analytics" },
-    { text: "Reports", icon: <DescriptionIcon />, path: "/reports"},
+    { text: "Reports", icon: <DescriptionIcon />, path: "/reports" },
     { text: "Profile", icon: <PersonIcon />, path: "/profile" },
   ];
 
