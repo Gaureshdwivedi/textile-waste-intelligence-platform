@@ -14,7 +14,7 @@ import {
 import RecyclingIcon from "@mui/icons-material/Recycling";
 import InsightsIcon from "@mui/icons-material/Insights";
 import PrecisionManufacturingIcon from "@mui/icons-material/PrecisionManufacturing";
-
+import PersonIcon from "@mui/icons-material/Person";
 import api from "../services/api";
 import AuthLayout, { authColors } from "../components/AuthLayout";
 
@@ -25,6 +25,12 @@ import AuthLayout, { authColors } from "../components/AuthLayout";
 // ==========================================================
 
 const ROLE_OPTIONS = [
+  {
+    value: "user",
+    label: "User",
+    description: "Analyze textile waste and explore sustainability insights.",
+    icon: PersonIcon,
+  },
   {
     value: "recycling_operator",
     label: "Recycling Operator",
@@ -95,7 +101,7 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("recycling_operator");
+  const [role, setRole] = useState("user");
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
